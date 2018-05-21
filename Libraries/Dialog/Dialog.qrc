@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="Error">Images/Error.png</file>
+        <file alias="Info">Images/Info.png</file>
+        <file alias="Warning">Images/Warning.png</file>
+    </qresource>
+</RCC>
