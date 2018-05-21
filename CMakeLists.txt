@@ -3,29 +3,29 @@ cmake_minimum_required(VERSION 3.10)
 # Project name
 project(DBZBT3)
 
-set(QT_VERSION 5.10.1)
-
-# Define Qt path
+# Check compiler and set constant
 if ((${CMAKE_CXX_COMPILER_ID} STREQUAL GNU AND NOT CYGWIN) OR ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-        set(CMAKE_PREFIX_PATH "C:\\Qt\\${QT_VERSION}\\msvc2015")
         set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
-    elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
-        if (WIN32)
-            set(CMAKE_PREFIX_PATH "C:\\Qt\\${QT_VERSION}\\mingw53_32")
-        else ()
-            set(CMAKE_PREFIX_PATH "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64")
-        endif ()
     endif ()
 else ()
     message(FATAL_ERROR "Unsupported compiler!")
 endif ()
 
+# Define Qt path
+set(QT_PATH_FILE "CMakeQtPath.txt")
+if (EXISTS ${PROJECT_SOURCE_DIR}/${QT_PATH_FILE})
+    file(STRINGS ${QT_PATH_FILE} CMAKE_PREFIX_PATH)
+else ()
+    file(WRITE ${QT_PATH_FILE})
+    message(FATAL_ERROR "Qt path non set\nSet it manually in ${QT_PATH_FILE}")
+endif ()
+
 if (EXISTS ${CMAKE_PREFIX_PATH})
     message(STATUS "Qt path: ${CMAKE_PREFIX_PATH}")
 else ()
-    message(FATAL_ERROR "Qt path not exists!\nSet it manually to continue")
+    message(FATAL_ERROR "Qt path ${CMAKE_PREFIX_PATH} not exists!\nSet a valid one in ${QT_PATH_FILE}")
 endif ()
 
 if (WIN32)

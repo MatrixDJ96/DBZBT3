@@ -10,3 +10,4 @@ CTestTestfile.cmake
 .idea
 *debug*
 *release*
+CMakeQtPath.txt
