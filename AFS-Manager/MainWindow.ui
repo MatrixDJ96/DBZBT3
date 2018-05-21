@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>700</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>9</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item row="5" column="0">
+     <widget class="QTableWidget" name="tableWidget">
+      <property name="showGrid">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="topHorizontalLayout">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
+      <item alignment="Qt::AlignLeft">
+       <widget class="QLabel" name="afsName">
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignRight">
+       <widget class="QLabel" name="loadingTime">
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="6" column="0">
+     <layout class="QHBoxLayout" name="bottomHorizontalLayout">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
+      <item alignment="Qt::AlignLeft">
+       <widget class="QLabel" name="afsSize">
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="usedRam">
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignRight">
+       <widget class="QLabel" name="afsFileCount">
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>700</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuOptions">
+    <property name="title">
+     <string>Options</string>
+    </property>
+    <addaction name="actionSettings"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <widget class="QMenu" name="menuAFS">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>AFS</string>
+     </property>
+     <addaction name="actionUnpackAFS"/>
+     <addaction name="actionImportFromFolder"/>
+     <addaction name="actionApplyDKZPatch"/>
+    </widget>
+    <widget class="QMenu" name="menuAFL">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>AFL</string>
+     </property>
+     <widget class="QMenu" name="menuExport">
+      <property name="title">
+       <string>Export</string>
+      </property>
+      <property name="icon">
+       <iconset resource="../Resources/MainWindow.qrc">
+        <normaloff>:/Export</normaloff>:/Export</iconset>
+      </property>
+      <addaction name="actionExportCommon"/>
+      <addaction name="actionExportRAW"/>
+     </widget>
+     <widget class="QMenu" name="menuImport">
+      <property name="title">
+       <string>Import</string>
+      </property>
+      <property name="icon">
+       <iconset resource="../Resources/MainWindow.qrc">
+        <normaloff>:/Import</normaloff>:/Import</iconset>
+      </property>
+      <addaction name="actionImportCommon"/>
+      <addaction name="actionImportRAW"/>
+     </widget>
+     <addaction name="menuExport"/>
+     <addaction name="menuImport"/>
+    </widget>
+    <addaction name="menuAFS"/>
+    <addaction name="menuAFL"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuOptions"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Open</normaloff>:/Open</iconset>
+   </property>
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Exit</normaloff>:/Exit</iconset>
+   </property>
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Settings</normaloff>:/Settings</iconset>
+   </property>
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionUnpackAFS">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Unpack</normaloff>:/Unpack</iconset>
+   </property>
+   <property name="text">
+    <string>Unpack AFS</string>
+   </property>
+  </action>
+  <action name="actionImportFromFolder">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Import</normaloff>:/Import</iconset>
+   </property>
+   <property name="text">
+    <string>Import from folder</string>
+   </property>
+  </action>
+  <action name="actionApplyDKZPatch">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Apply .dkz patch</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="icon">
+    <iconset resource="../../Shared/Resources/Dialog.qrc">
+     <normaloff>:/Info</normaloff>:/Info</iconset>
+   </property>
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionExportCommon">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Export</normaloff>:/Export</iconset>
+   </property>
+   <property name="text">
+    <string>Common format</string>
+   </property>
+  </action>
+  <action name="actionExportRAW">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Export</normaloff>:/Export</iconset>
+   </property>
+   <property name="text">
+    <string>RAW format</string>
+   </property>
+  </action>
+  <action name="actionImportCommon">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Import</normaloff>:/Import</iconset>
+   </property>
+   <property name="text">
+    <string>Common format</string>
+   </property>
+  </action>
+  <action name="actionImportRAW">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Import</normaloff>:/Import</iconset>
+   </property>
+   <property name="text">
+    <string>RAW format</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Save</normaloff>:/Save</iconset>
+   </property>
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="../Resources/MainWindow.qrc"/>
+  <include location="../../Shared/Resources/Dialog.qrc"/>
+ </resources>
+ <connections/>
+</ui>

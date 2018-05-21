@@ -1,0 +1,4 @@
+#include "VersionInfo.h"
+#include "../Shared/Shared.rc"
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST  "../Shared/Shared.manifest"

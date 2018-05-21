@@ -1,0 +1,5 @@
+#include "../Headers/VersionInfo.h"
+#include "../../Shared/Resources/Shared.rc"
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST  "../../Shared/Resources/Shared.manifest"
+IDI_ICON1               ICON    DISCARDABLE     "CTE-Plugin.ico"
