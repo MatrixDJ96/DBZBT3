@@ -1,4 +1,4 @@
-#include "../Headers/CTECore.h"
+#include "CTECore.h"
 
 using namespace Shared;
 

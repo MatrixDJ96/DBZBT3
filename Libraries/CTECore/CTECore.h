@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "../../Shared/Headers/Shared.h"
+#include "../Shared/Shared.h"
 
 /* Q(81) R(82) S(83) */
 static const uint32_t qrs_matrix[] = {

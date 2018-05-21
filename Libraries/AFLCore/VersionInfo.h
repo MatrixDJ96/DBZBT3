@@ -8,7 +8,7 @@
 #define FILEVERSION_STR         "0.0.0.1"
 #define PRODUCTVERSION_STR      FILEVERSION_STR
 
-#define PRODUCTNAME_STR         "AFLCore library"
+#define PRODUCTNAME_STR         "AFLCore Library"
 #define FILEDESCRIPTION_STR     PRODUCTNAME_STR
 
 #endif // VERSIONINFO_H

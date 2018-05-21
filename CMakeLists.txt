@@ -3,17 +3,35 @@ cmake_minimum_required(VERSION 3.10)
 # Project name
 project(DBZBT3)
 
+set(QT_VERSION 5.10.1)
+
 # Define Qt path
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set(CMAKE_PREFIX_PATH C:\\Qt\\5.10.1\\msvc2015)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
-elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
-    set(CMAKE_PREFIX_PATH C:\\Qt\\5.10.1\\mingw53_32)
+if ((${CMAKE_CXX_COMPILER_ID} STREQUAL GNU AND NOT CYGWIN) OR ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+    if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+        set(CMAKE_PREFIX_PATH "C:\\Qt\\${QT_VERSION}\\msvc2015")
+        set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
+    elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
+        if (WIN32)
+            set(CMAKE_PREFIX_PATH "C:\\Qt\\${QT_VERSION}\\mingw53_32")
+        else ()
+            set(CMAKE_PREFIX_PATH "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64")
+        endif ()
+    endif ()
 else ()
     message(FATAL_ERROR "Unsupported compiler!")
 endif ()
-message(STATUS "Qt path: ${CMAKE_PREFIX_PATH}")
+
+if (EXISTS ${CMAKE_PREFIX_PATH})
+    message(STATUS "Qt path: ${CMAKE_PREFIX_PATH}")
+else ()
+    message(FATAL_ERROR "Qt path not exists!\nSet it manually to continue")
+endif ()
+
+if (WIN32)
+    message(STATUS "Setting Windows executable")
+    set(CMAKE_WIN32_EXECUTABLE ON)
+endif ()
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
@@ -77,7 +95,7 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS ${DIALOG_PATH} ${AFS_MANAGER_PATH})
 
 # Shared
 add_library(Shared SHARED ${SHARED_SOURCES} ${SHARED_RESOURCES})
-if (MINGW OR CYGWIN)
+if (MINGW)
     message(STATUS "Including psapi library")
     target_link_libraries(Shared psapi)
 endif ()
@@ -99,13 +117,13 @@ add_library(CTECore SHARED ${CTE_CORE_SOURCES} ${CTE_CORE_RESOURCES})
 target_link_libraries(CTECore Shared)
 
 # AFL-Converter
-add_executable(AFL-Converter WIN32 ${AFL_CONVERTER_SOURCES} ${AFL_CONVERTER_RESOURCES})
-target_link_libraries(AFL-Converter Dialog AFLCore)
+add_executable(AFL-Converter ${AFL_CONVERTER_SOURCES} ${AFL_CONVERTER_RESOURCES})
+target_link_libraries(AFL-Converter AFLCore Dialog)
 
 # AFS-Manager
-add_executable(AFS-Manager WIN32 ${AFS_MANAGER_Q_OBJECT_HEADERS} ${AFS_MANAGER_SOURCES} ${AFS_MANAGER_RESOURCES})
-target_link_libraries(AFS-Manager Dialog AFSCore)
+add_executable(AFS-Manager ${AFS_MANAGER_Q_OBJECT_HEADERS} ${AFS_MANAGER_SOURCES} ${AFS_MANAGER_RESOURCES})
+target_link_libraries(AFS-Manager AFSCore Dialog)
 
 # CTE-Plugin
-add_executable(CTE-Plugin WIN32 ${CTE_PLUGIN_SOURCES} ${CTE_PLUGIN_RESOURCES})
-target_link_libraries(CTE-Plugin Dialog CTECore)
+add_executable(CTE-Plugin ${CTE_PLUGIN_SOURCES} ${CTE_PLUGIN_RESOURCES})
+target_link_libraries(CTE-Plugin CTECore Dialog)

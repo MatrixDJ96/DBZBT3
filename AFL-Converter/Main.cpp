@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
                 if (reply == Reply::Left)
                     overwrite = true;
                 else if (reply == Reply::Right) {
-                    outName = QFileDialog::getOpenFileName().toLocal8Bit().toStdString();
+                    outName = QFileDialog::getSaveFileName().toLocal8Bit().toStdString();
                     if (!outName.empty()) {
                         if (Shared::fileExists(outName))
                             overwrite = true;
