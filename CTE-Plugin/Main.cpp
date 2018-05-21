@@ -1,46 +1,65 @@
 #include <QApplication>
 #include <QFileDialog>
 
-#include "../Headers/CTECore.h"
-#include "../Headers/VersionInfo.h"
-#include "../../Shared/Headers/Dialog.h"
+#include "VersionInfo.h"
+#include "../Libraries/Dialog/Dialog.h"
+#include "../Libraries/CTECore/CTECore.h"
 
-int main(int argc, char* argv[])
-{
+
+int main(int argc, char *argv[]) {
 	QApplication app(argc, argv);
 
-	Dialog dialog(app, PRODUCTNAME_STR, FILEVERSION_STR);
+	std::string title(PRODUCTNAME_STR);
+	title += " v";
+	title += PRODUCTVERSION_STR;
 
-	std::string name;
-	if (argc < 2)
-		name = std::string(QFileDialog::getOpenFileName().toStdString());
-	else
-		name = argv[1];
+	std::string inName;
+	if (argc > 1)
+		inName = argv[1];
 
-	if (name != "")
-	{
-		std::ifstream in(name, std::ios::in | std::ios::binary);
-		if (in.is_open())
-		{
-			Texture_File file(name, in);
-			if (file.getTexturesCount() > 0)
-			{
-				uint8_t result = file.Convert();
-				if (result == 0)
-					dialog.setLabelText("File '" + file.getOutName() + ".ini' written!");
-				else if (result == 1)
-					dialog.setLabelText("File '" + file.getOutName() + "' already exists");
-				else if (result == 2)
-					dialog.setLabelText("Unable to write '" + file.getOutName() + "'\n(No permission?)");
+	if (!Shared::fileExists(inName) || inName.empty())
+		inName = QFileDialog::getOpenFileName().toLocal8Bit().toStdString();
+
+	if (!inName.empty()) {
+		Texture_File texture(inName);
+
+		if (texture.getTexturesCount() > 0) {
+			bool overwrite = false;
+			std::string outName(texture.getOutName());
+			if (Shared::fileExists(outName)) {
+				Warning warning(title, "Do you want to overwrite\n'" + Shared::getFilename(outName) + "'?");
+				warning.exec();
+				Reply reply = warning.getReply();
+				if (reply == Reply::Left)
+					overwrite = true;
+				else if (reply == Reply::Right) {
+					outName = QFileDialog::getSaveFileName().toLocal8Bit().toStdString();
+					if (!outName.empty()) {
+						if (Shared::fileExists(outName))
+							overwrite = true;
+						texture.setOutName(outName);
+					} else
+						return EXIT_FAILURE;
+				} else
+					return EXIT_FAILURE;
 			}
-			else
-				dialog.setLabelText("Nothing to do! (Empty file?)");
-		}
-		else
-			dialog.setLabelText("File '" + name + "' not found!");
-	}
-	else
-		app.exit();
 
-	return app.exec();
+			bool result = texture.Convert();
+			if (result) {
+				Message message(title, "'" + Shared::getFilename(outName) + "'\nsuccessfully " + (overwrite ? "overwritten" : "created"));
+				message.exec();
+				return EXIT_SUCCESS;
+			} else {
+				Message message(title, "Unable to convert\n'" + Shared::getFilename(inName) + "'", Type::Error);
+				message.exec();
+				return EXIT_FAILURE;
+			}
+		} else {
+			Message message(title, "Nothing to do!");
+			message.exec();
+			return EXIT_SUCCESS;
+		}
+	}
+
+	return EXIT_FAILURE;
 }

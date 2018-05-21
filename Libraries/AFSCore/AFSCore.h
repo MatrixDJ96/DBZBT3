@@ -10,7 +10,7 @@ struct FileInfo {
 };
 
 struct FileDesc {
-    FileDesc() : name(""), year(0), month(0), day(0), hour(0), minute(0), second(0) {}
+    FileDesc() : name(""), year(0), month(0), day(0), hour(0), minute(0), second(0), size(0) {}
 
     char name[33]; // name[32] equals to '\0'
     uint16_t year, month, day, hour, minute, second;
@@ -18,7 +18,7 @@ struct FileDesc {
 };
 
 /* Default AFS header */
-static const uint32_t afsHeader = 0x00534641;
+const uint32_t afsHeader = 0x00534641;
 
 struct AFS_Error {
     AFS_Error() : unableToOpen(false), notAFS(false), infoSize(false), descSize(false), afsSize(false), fileDesc(false),

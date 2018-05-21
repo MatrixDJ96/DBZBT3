@@ -16,7 +16,7 @@ public:
 
     const std::string &getOutName() const;
 
-    const uint32_t getFileCount() const;
+    uint32_t getFileCount() const;
 
     const std::vector<std::string> &getFileList() const;
 

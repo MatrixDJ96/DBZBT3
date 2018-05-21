@@ -7,10 +7,10 @@ bool isAFL(const std::string &file) {
     bool isAFL = true;
 
     /* Check header */
-    uint32_t buffer;
-    for (int i = 0; i < 3; i++) {
+    uint32_t buffer = 0;
+    for (const uint32_t &i : aflHeader) {
         inFile.read(reinterpret_cast<char *>(&buffer), 4);
-        if (inFile.eof() || buffer != aflHeader[i]) {
+        if (inFile.eof() || buffer != i) {
             isAFL = false;
             break;
         }
@@ -87,8 +87,8 @@ const std::string &AFL_File::getOutName() const {
     return outName;
 }
 
-const uint32_t AFL_File::getFileCount() const {
-    return fileList.size();
+uint32_t AFL_File::getFileCount() const {
+    return (uint32_t) fileList.size();
 }
 
 const std::vector<std::string> &AFL_File::getFileList() const {

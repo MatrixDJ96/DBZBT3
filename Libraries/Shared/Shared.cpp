@@ -290,19 +290,16 @@ uint32_t Shared::getUsedRam() {
 
 #elif __linux
 
-uint32_t Shared::getUsedRam()
-{
+uint32_t Shared::getUsedRam() {
     std::string usedRam;
     std::string line("vmrss:");
     size_t pos = 0; // first char position of line (should be always at 0 but it's best to be sure)
 
     std::ifstream in("/proc/self/status");
-    while (!in.eof())
-    {
+    while (!in.eof()) {
         Shared::getLine(in, usedRam);
         pos = Shared::getLowercaseStr(usedRam).find(line);
-        if (pos != std::string::npos)
-        {
+        if (pos != std::string::npos) {
             if (Shared::getLowercaseStr(usedRam).find("kb") != std::string::npos)
                 return strtoul(usedRam.substr(pos + line.size()).c_str(), NULL, 10) * 1024; // return size in bytes
 
