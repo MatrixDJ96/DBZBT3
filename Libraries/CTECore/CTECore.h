@@ -18,7 +18,6 @@ struct Texture {
     uint32_t width, height, gfx_offset, palette_offset;
 };
 
-/* Before using this class you must initialize a valid std::ifstream and check manually if it 'is_open()' */
 class Texture_File {
 public:
     Texture_File(const std::string &name);
