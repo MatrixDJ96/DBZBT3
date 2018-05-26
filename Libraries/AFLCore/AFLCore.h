@@ -8,27 +8,28 @@
 /* Default AFL header */
 const uint32_t aflHeader[] = {0x004C4641, 0x00000001, 0xFFFFFFFF};
 
-class AFL_File {
+class AFL_File
+{
 public:
-    AFL_File(const std::string &inName);
+	explicit AFL_File(const std::string &inName);
 
-    ~AFL_File();
+	~AFL_File();
 
-    const std::string &getOutName() const;
+	const std::string &getOutName() const;
 
-    uint32_t getFileCount() const;
+	size_t getFileCount() const;
 
-    const std::vector<std::string> &getFileList() const;
+	const std::vector<std::string> &getFileList() const;
 
-    void setOutName(const std::string &outName);
+	void setOutName(const std::string &outName);
 
-    bool Convert() const;
+	bool Convert() const;
 
 private:
-    std::string inName;
-    std::string outName;
-    std::vector<std::string> fileList;
-    bool isText; // false -> afl; true -> !afl
+	std::string inName;
+	std::string outName;
+	std::vector<std::string> list;
+	bool isText; // false -> afl; true -> !afl
 };
 
 #endif // AFLCORE_H

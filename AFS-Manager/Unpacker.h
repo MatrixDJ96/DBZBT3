@@ -6,41 +6,33 @@
 #include "../Libraries/AFSCore/AFSCore.h"
 #include "../Libraries/Dialog/Dialog.h"
 
-class Unpacker : public QThread {
+class Unpacker : public QObject
+{
 Q_OBJECT
 
 public:
-    Unpacker(AFS_File *afs, const QList<int> &list, const std::string &path);
+	Unpacker(const AFS_File *afs, const QList<uint32_t> &list, const std::string &path);
 
-    ~Unpacker();
+	~Unpacker();
 
-    void resume();
-
-    void skip();
-
-    void skipAll();
+	void start();
 
 private:
-    virtual void run();
+	const AFS_File *afs;
+	const QList<uint32_t> list;
+	const std::string path;
+	QThread thread;
+	uint32_t position;
+	
+public slots:
+	void exportFile();
 
-private:
-    const AFS_File *afs;
-    const QList<int> list;
-    const std::string path;
-    Progress *progress;
-    bool isInterrupted;
-    bool toSkip;
-    bool toSkipAll;
+	void emitDone();
 
 signals:
+	void progressFile();
 
-    void abort();
-
-    void done();
-
-    void error(const QString &filename, bool multi);
-
-    void next();
+	void exportDone();
 };
 
 #endif // UNPACKER_H
