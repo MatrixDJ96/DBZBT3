@@ -1,6 +1,7 @@
-#include "AFSCore.h"
-
 #include <sstream>
+#include <limits>
+
+#include "AFSCore.h"
 
 using namespace Shared;
 
@@ -126,6 +127,11 @@ void AFS_File::changeFilename(const uint32_t &index, const std::string &name)
 	}
 }
 
+const char *AFS_File::getFilename(const uint32_t &index) const
+{
+	return fileDesc[index].name;
+}
+
 bool AFS_File::exportFile(const uint32_t &index, const std::string &path) const
 {
 	std::ofstream outFile(path, std::ios::out | std::ios::binary);
@@ -206,7 +212,7 @@ uint8_t AFS_File::importFile(const uint32_t &index, const std::string &path)
 		/* Clean old file inside AFS */
 		outFile.seekg(fileInfo[index].address, std::ios::beg);
 		eraseContent((std::ofstream &)outFile, fileInfo[index].size);  // should be added check of return value*/
-	
+
 		/* Import new file inside AFS */
 		outFile.seekg(fileInfo[index].address, std::ios::beg);
 		writeContent(inFile, (std::ofstream &)outFile, size);
@@ -415,3 +421,4 @@ void AFS_File::loadFileDesc(std::fstream &inFile)
 		error.descSize = true;
 	}
 }
+

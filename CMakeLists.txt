@@ -62,8 +62,8 @@ set(SHARED_SOURCES ${SHARED_PATH}/Shared.cpp)
 set(SHARED_RESOURCES ${SHARED_PATH}/Shared.rc)
 
 # Define Dialog source code
-set(DIALOG_Q_OBJECT_HEADERS ${DIALOG_PATH}/Dialog.h)
-set(DIALOG_SOURCES ${DIALOG_PATH}/Dialog.cpp)
+#set(DIALOG_Q_OBJECT_HEADERS)
+set(DIALOG_SOURCES ${DIALOG_PATH}/ButtonEvent.cpp ${DIALOG_PATH}/Dialog.cpp ${DIALOG_PATH}/Message.cpp ${DIALOG_PATH}/Progress.cpp ${DIALOG_PATH}/Warning.cpp)
 set(DIALOG_RESOURCES ${DIALOG_PATH}/Dialog.rc ${DIALOG_PATH}/Dialog.qrc)
 
 # Define AFL source code
@@ -75,7 +75,7 @@ set(AFL_CORE_SOURCES ${AFL_CORE_PATH}/AFLCore.cpp)
 set(AFL_CORE_RESOURCES ${AFL_CORE_PATH}/AFLCore.rc)
 
 # Define AFS source code
-set(AFS_MANAGER_Q_OBJECT_HEADERS ${AFS_MANAGER_PATH}/MainWindow.h ${AFS_MANAGER_PATH}/Unpacker.h)
+#set(AFS_MANAGER_Q_OBJECT_HEADERS)
 set(AFS_MANAGER_SOURCES ${AFS_MANAGER_PATH}/Main.cpp ${AFS_MANAGER_PATH}/MainWindow.cpp ${AFS_MANAGER_PATH}/Unpacker.cpp)
 set(AFS_MANAGER_RESOURCES ${AFS_MANAGER_PATH}/AFS-Manager.rc ${AFS_MANAGER_PATH}/MainWindow.qrc)
 #set(AFS_CORE_Q_OBJECT_HEADERS)
@@ -101,7 +101,7 @@ if (MINGW)
 endif ()
 
 # Dialog
-add_library(Dialog SHARED ${DIALOG_Q_OBJECT_HEADERS} ${DIALOG_SOURCES} ${DIALOG_RESOURCES})
+add_library(Dialog SHARED ${DIALOG_SOURCES} ${DIALOG_RESOURCES})
 target_link_libraries(Dialog Qt5::Widgets)
 
 # AFLCore
@@ -121,7 +121,7 @@ add_executable(AFL-Converter ${AFL_CONVERTER_SOURCES} ${AFL_CONVERTER_RESOURCES}
 target_link_libraries(AFL-Converter AFLCore Dialog)
 
 # AFS-Manager
-add_executable(AFS-Manager ${AFS_MANAGER_Q_OBJECT_HEADERS} ${AFS_MANAGER_SOURCES} ${AFS_MANAGER_RESOURCES})
+add_executable(AFS-Manager ${AFS_MANAGER_SOURCES} ${AFS_MANAGER_RESOURCES})
 target_link_libraries(AFS-Manager AFSCore Dialog)
 
 # CTE-Plugin

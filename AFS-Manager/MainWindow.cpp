@@ -105,14 +105,15 @@ void MainWindow::openAFS(const std::string &name)
 
 	auto start = std::chrono::steady_clock::now();
 	drawFileList();
-	auto stop = std::chrono::steady_clock::now();
-	ui->loadingTime->setText("Loading time: " + QString::number(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() / 1000.0) + " sec");
+	auto end = std::chrono::steady_clock::now();
+
+	ui->loadingTime->setText("Loading time: " + QString::number((double)std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0) + " sec");
 
 	// TODO -> remove
 	ui->usedRam->setText(("Used RAM: " + getStringSize(getUsedRam())).c_str());
 }
 
-inline void MainWindow::connectCellChanged()
+void MainWindow::connectCellChanged()
 {
 	this->connectionCellChanged = connect(ui->tableWidget, SIGNAL(cellChanged(int, int)), this, SLOT(slotCellChanged(int, int)));
 }
@@ -237,26 +238,26 @@ inline void MainWindow::populateRowCell(const int &row, const int &column, QTabl
 	ui->tableWidget->setItem(row, column, item);
 }
 
-void MainWindow::startExporting(const QList<uint32_t> &list, const std::string &path) // TODO -> lock function on MainWindow during unpacker execution
+void MainWindow::startExporting(const QList<uint32_t> &list, const std::string &path)
 {
 	unpacker = new Unpacker(afs, list, path);
 
-	progressUnpacker = new Progress("Unpacker", "Exporting files...", QString::fromLocal8Bit(":/Unpack"));
+	progressUnpacker = new Progress("Unpacker", std::string("Exporting ") + afs->getFilename(list[0]) + "...", QString::fromLocal8Bit(":/Unpack"));
 	progressUnpacker->setMaximum(list.size());
 
 	connect(this, SIGNAL(exportFile()), unpacker, SLOT(exportFile()));
-	connect(unpacker, SIGNAL(progressFile()), SLOT(progressFile()));
+	connect(unpacker, SIGNAL(progressFile(const char*)), SLOT(progressFile(const char*)));
+	connect(unpacker, SIGNAL(errorFile(const char*)), SLOT(errorFile(const char*)));
 	connect(unpacker, SIGNAL(exportDone()), this, SLOT(exportDone()));
 
-	progressUnpacker->show();
 	unpacker->start();
+	progressUnpacker->exec();
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
 	event->accept();
 }
-
 
 void MainWindow::dropEvent(QDropEvent *event)
 {
@@ -274,7 +275,6 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 		openAFS(name);
 	}
-
 }
 
 // ---------- menu bar ----------
@@ -290,7 +290,7 @@ void MainWindow::on_actionExportCommon_triggered()
 	} // prevent possible future errors
 
 	std::string path = QFileDialog::getSaveFileName(this, "Save common AFL file", getFileBaseName(afs->afsName, "afs").c_str(), "Common AFL file (*.afl)").toLocal8Bit().toStdString();
-	if (path == "") {
+	if (path.empty()) {
 		return;
 	}
 
@@ -416,10 +416,30 @@ void MainWindow::on_actionUnpackAFS_triggered()
 }
 
 // ---------- start unpacker connection ----------
-void MainWindow::progressFile()
+void MainWindow::progressFile(const char* name)
 {
 	progressUnpacker->next();
+	progressUnpacker->setNotice(std::string("Exporting ") + name + "...");
 	emit exportFile();
+}
+
+void MainWindow::errorFile(const char* name)
+{
+	Warning warning("Error", std::string("Unable to export\n") + name, Type::Error);
+	warning.setLeftButtonText("Abort").setCenterButtonText("Retry").setRightButtonText("Skip");
+	warning.exec();
+
+	Reply reply = warning.getReply();
+	if (reply == Reply::Left) {
+		Message message("Abort", "TO DO");
+		message.exec();
+		emit exportFile();
+	} else if (reply == Reply::Center){
+		emit exportFile();
+	} else {
+		unpacker->skip();
+		emit exportFile();
+	}
 }
 
 /*void MainWindow::abort()
@@ -439,6 +459,10 @@ void MainWindow::progressFile()
 void MainWindow::exportDone()
 {
 	delPointer(unpacker);
+	delPointer(progressUnpacker);
+	
+	Message message("Unpacker", "Extraction completed!");
+	message.exec();
 }
 
 /*void MainWindow::error(const QString &filename, bool multi)
@@ -491,7 +515,7 @@ void MainWindow::on_actionExportSelected_triggered()
 	std::string path;
 
 	if (list.size() == 1) {
-		path = QFileDialog::getSaveFileName(this, "Save file", QString::fromLocal8Bit(afs->getFileDesc()[list[0]].name), "File (*)").toLocal8Bit().toStdString();
+		path = QFileDialog::getSaveFileName(this, "Save file", QString::fromLocal8Bit(afs->getFilename(list[0])), "File (*)").toLocal8Bit().toStdString();
 	}
 	else {
 		path = QFileDialog::getExistingDirectory().toLocal8Bit().toStdString();

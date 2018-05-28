@@ -4,7 +4,6 @@
 #include <QThread>
 
 #include "../Libraries/AFSCore/AFSCore.h"
-#include "../Libraries/Dialog/Dialog.h"
 
 class Unpacker : public QObject
 {
@@ -17,6 +16,8 @@ public:
 
 	void start();
 
+	void skip();
+
 private:
 	const AFS_File *afs;
 	const QList<uint32_t> list;
@@ -27,10 +28,12 @@ private:
 public slots:
 	void exportFile();
 
-	void emitDone();
+	void done();
 
 signals:
-	void progressFile();
+	void progressFile(const char* name);
+
+	void errorFile(const char* name);
 
 	void exportDone();
 };

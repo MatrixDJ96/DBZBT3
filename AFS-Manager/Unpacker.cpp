@@ -5,23 +5,30 @@ Unpacker::Unpacker(const AFS_File *afs, const QList<uint32_t> &list, const std::
 	this->moveToThread(&thread);
 
 	connect(&thread, SIGNAL(started()), this, SLOT(exportFile()));
-	connect(&thread, SIGNAL(finished()), this, SLOT(emitDone()));
+	connect(&thread, SIGNAL(finished()), this, SLOT(done()));
 }
 
-Unpacker::~Unpacker()
-{
-}
+Unpacker::~Unpacker() = default;
 
 void Unpacker::start()
 {
 	thread.start();
 }
 
+void Unpacker::skip()
+{
+	++position;
+}
+
 void Unpacker::exportFile()
 {
 	if (position < (uint32_t)this->list.size()) {
-		++position;
-		emit progressFile();
+		std::string filepath = path + '/' + afs->getFilename(position);
+		if (afs->exportFile(list[position], filepath)) {
+			emit progressFile(afs->getFilename(position++));
+		} else {
+			emit errorFile(afs->getFilename(position));
+		}
 	}
 	else {
 		thread.quit();
@@ -29,7 +36,7 @@ void Unpacker::exportFile()
 	}
 }
 
-void Unpacker::emitDone()
+void Unpacker::done()
 {
 	emit exportDone();
 }

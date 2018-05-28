@@ -6,6 +6,9 @@
 #include <QTableWidget>
 
 #include "Unpacker.h"
+#include "../Libraries/Dialog/Message.h"
+#include "../Libraries/Dialog/Progress.h"
+#include "../Libraries/Dialog/Warning.h"
 
 namespace Ui
 {
@@ -71,7 +74,9 @@ private slots:
 	void on_actionUnpackAFS_triggered();
 
 	// unpacker connection
-	void progressFile();
+	void progressFile(const char* name);
+
+	void errorFile(const char* name);
 
 	void exportDone();
 
