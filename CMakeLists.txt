@@ -28,7 +28,15 @@ else ()
     message(FATAL_ERROR "Qt path ${CMAKE_PREFIX_PATH} not exists!\nSet a valid one in ${QT_PATH_FILE}")
 endif ()
 
-if (WIN32)
+# Define debug postfix/suffix
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
+if (${CMAKE_BUILD_TYPE_UPPER} STREQUAL DEBUG)
+    set(CMAKE_EXECUTABLE_SUFFIX d${CMAKE_EXECUTABLE_SUFFIX})
+    set(CMAKE_DEBUG_POSTFIX d)
+    add_definitions(-DDBZBT3_DEBUG)
+endif ()
+
+if (WIN32 AND NOT (${CMAKE_BUILD_TYPE_UPPER} STREQUAL DEBUG))
     message(STATUS "Setting Windows executable")
     set(CMAKE_WIN32_EXECUTABLE ON)
 endif ()
@@ -40,11 +48,12 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Define debug postfix
-set(CMAKE_DEBUG_POSTFIX d)
-
 # QT += widgets
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
+
+# Define output path
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/Binaries/${CMAKE_CXX_COMPILER_ID})
+set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/Binaries/${CMAKE_CXX_COMPILER_ID})
 
 # Define various path
 set(SHARED_PATH Libraries/Shared)
@@ -57,36 +66,28 @@ set(AFS_MANAGER_PATH AFS-Manager)
 set(CTE_PLUGIN_PATH CTE-Plugin)
 
 # Define Shared source code
-#set(SHARED_Q_OBJECT_HEADERS)
 set(SHARED_SOURCES ${SHARED_PATH}/Shared.cpp)
 set(SHARED_RESOURCES ${SHARED_PATH}/Shared.rc)
 
 # Define Dialog source code
-#set(DIALOG_Q_OBJECT_HEADERS)
 set(DIALOG_SOURCES ${DIALOG_PATH}/ButtonEvent.cpp ${DIALOG_PATH}/Dialog.cpp ${DIALOG_PATH}/Message.cpp ${DIALOG_PATH}/Progress.cpp ${DIALOG_PATH}/Warning.cpp)
 set(DIALOG_RESOURCES ${DIALOG_PATH}/Dialog.rc ${DIALOG_PATH}/Dialog.qrc)
 
 # Define AFL source code
-#set(AFL_CONVERTER_Q_OBJECT_HEADERS)
 set(AFL_CONVERTER_SOURCES ${AFL_CONVERTER_PATH}/Main.cpp)
 set(AFL_CONVERTER_RESOURCES ${AFL_CONVERTER_PATH}/AFL-Converter.rc)
-#set(AFL_CORE_Q_OBJECT_HEADERS)
 set(AFL_CORE_SOURCES ${AFL_CORE_PATH}/AFLCore.cpp)
 set(AFL_CORE_RESOURCES ${AFL_CORE_PATH}/AFLCore.rc)
 
 # Define AFS source code
-#set(AFS_MANAGER_Q_OBJECT_HEADERS)
 set(AFS_MANAGER_SOURCES ${AFS_MANAGER_PATH}/Main.cpp ${AFS_MANAGER_PATH}/MainWindow.cpp ${AFS_MANAGER_PATH}/Unpacker.cpp)
 set(AFS_MANAGER_RESOURCES ${AFS_MANAGER_PATH}/AFS-Manager.rc ${AFS_MANAGER_PATH}/MainWindow.qrc)
-#set(AFS_CORE_Q_OBJECT_HEADERS)
 set(AFS_CORE_SOURCES ${AFS_CORE_PATH}/AFSCore.cpp)
 set(AFS_CORE_RESOURCES ${AFS_CORE_PATH}/AFSCore.rc)
 
 # Define CTE source code
-#set(CTE_PLUGIN_Q_OBJECT_HEADERS)
 set(CTE_PLUGIN_SOURCES ${CTE_PLUGIN_PATH}/Main.cpp)
 set(CTE_PLUGIN_RESOURCES ${CTE_PLUGIN_PATH}/CTE-Plugin.rc)
-#set(CTE_CORE_Q_OBJECT_HEADERS)
 set(CTE_CORE_SOURCES ${CTE_CORE_PATH}/CTECore.cpp)
 set(CTE_CORE_RESOURCES ${CTE_CORE_PATH}/CTECore.rc)
 

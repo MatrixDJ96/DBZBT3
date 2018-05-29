@@ -80,6 +80,8 @@ private slots:
 
 	void exportDone();
 
+	void exportAbort(int i);
+
 	// context menu
 	void showContextMenu(const QPoint &point);
 

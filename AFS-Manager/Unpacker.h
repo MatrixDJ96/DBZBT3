@@ -16,6 +16,8 @@ public:
 
 	void start();
 
+	void quit();
+
 	void skip();
 
 private:

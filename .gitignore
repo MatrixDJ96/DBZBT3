@@ -11,4 +11,5 @@ CTestTestfile.cmake
 .vs
 *debug*
 *release*
+Binaries
 CMakeQtPath.txt

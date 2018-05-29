@@ -7,6 +7,10 @@ Progress::Progress(const std::string &title, const std::string &text, const QPix
 	ui->progressBar->setHidden(false);
 }
 
+Progress::~Progress()
+{
+}
+
 int Progress::getProgress() const
 {
 	return ui->progressBar->value();

@@ -2,6 +2,10 @@
 #include <QMimeData>
 #include <chrono>
 
+#ifdef DBZBT3_DEBUG
+#include <QDebug>
+#endif
+
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
@@ -31,8 +35,14 @@ MainWindow::MainWindow(const std::string &name, const std::string &version, QWid
 	// connect actions to context menu and setup ui
 	ui->setupUi(this);
 
-	// set title and other labels
-	this->setWindowTitle(std::string(name + " v" + version + " [WIP]").c_str());
+	// set title
+	std::string title = name + " v" + version + " [WIP]";
+#ifdef DBZBT3_DEBUG
+	title += " DEBUG";
+#endif
+	this->setWindowTitle(title.c_str());
+
+	// set other labels
 	ui->afsName->setText("Welcome to AFS-Manager!");
 	ui->loadingTime->setText("");
 	ui->afsSize->setText("");
@@ -250,8 +260,24 @@ void MainWindow::startExporting(const QList<uint32_t> &list, const std::string &
 	connect(unpacker, SIGNAL(errorFile(const char*)), SLOT(errorFile(const char*)));
 	connect(unpacker, SIGNAL(exportDone()), this, SLOT(exportDone()));
 
+
+	connect(progressUnpacker, SIGNAL(finished(int)), this, SLOT(exportAbort(int)));
+
 	unpacker->start();
-	progressUnpacker->exec();
+	progressUnpacker->show();
+	//unpacker->exportDone();
+
+
+	/*Warning warning("Abort", "Cancel operation?");
+	warning.exec();
+
+	if (warning.getReply() == Reply::Left) {
+		unpacker->terminate();
+		done();
+	}
+	else {
+		unpacker->resume();
+	}*/
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
@@ -334,7 +360,7 @@ void MainWindow::on_actionImportCommon_triggered()
 
 	std::string path = QFileDialog::getOpenFileName().toLocal8Bit().toStdString();
 
-	if (path == "") {
+	if (path.empty()) {
 		return;
 	}
 
@@ -357,7 +383,7 @@ void MainWindow::on_actionImportRAW_triggered()
 
 	std::string path = QFileDialog::getOpenFileName().toLocal8Bit().toStdString();
 
-	if (path == "") {
+	if (path.empty()) {
 		return;
 	}
 
@@ -416,14 +442,14 @@ void MainWindow::on_actionUnpackAFS_triggered()
 }
 
 // ---------- start unpacker connection ----------
-void MainWindow::progressFile(const char* name)
+void MainWindow::progressFile(const char *name)
 {
 	progressUnpacker->next();
 	progressUnpacker->setNotice(std::string("Exporting ") + name + "...");
 	emit exportFile();
 }
 
-void MainWindow::errorFile(const char* name)
+void MainWindow::errorFile(const char *name)
 {
 	Warning warning("Error", std::string("Unable to export\n") + name, Type::Error);
 	warning.setLeftButtonText("Abort").setCenterButtonText("Retry").setRightButtonText("Skip");
@@ -434,9 +460,11 @@ void MainWindow::errorFile(const char* name)
 		Message message("Abort", "TO DO");
 		message.exec();
 		emit exportFile();
-	} else if (reply == Reply::Center){
+	}
+	else if (reply == Reply::Center) {
 		emit exportFile();
-	} else {
+	}
+	else {
 		unpacker->skip();
 		emit exportFile();
 	}
@@ -460,9 +488,30 @@ void MainWindow::exportDone()
 {
 	delPointer(unpacker);
 	delPointer(progressUnpacker);
-	
+
 	Message message("Unpacker", "Extraction completed!");
 	message.exec();
+}
+
+void MainWindow::exportAbort(int i)
+{
+#ifdef DBZBT3_DEBUG
+	qDebug() << "Risultato chiusura: " << i;
+#endif
+
+	unpacker->quit();
+
+	Warning warning("Abort", "Cancel operation?");
+	warning.exec();
+
+	if (warning.getReply() == Reply::Left) {
+		//delPointer(unpacker);
+		delPointer(progressUnpacker);
+	}
+	else {
+		unpacker->start();
+		progressUnpacker->show();
+	}
 }
 
 /*void MainWindow::error(const QString &filename, bool multi)
@@ -572,5 +621,3 @@ void MainWindow::slotCellChanged(const int &row, const int &column)
 	}
 	afs->changeFilename((uint32_t)row, text);
 }
-
-

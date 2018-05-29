@@ -10,6 +10,8 @@ Q_OBJECT
 public:
 	Progress(const std::string &title, const std::string &text, const QPixmap &pixmap);
 
+	~Progress();
+
 	int getProgress() const;
 
 	Dialog &setProgress(const int &value);
