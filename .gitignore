@@ -12,4 +12,4 @@ CTestTestfile.cmake
 *debug*
 *release*
 Binaries
-CMakeQtPath.txt
+CMakeQtPath*.txt

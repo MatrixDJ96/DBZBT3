@@ -14,7 +14,7 @@ else ()
 endif ()
 
 # Define Qt path
-set(QT_PATH_FILE "CMakeQtPath.txt")
+set(QT_PATH_FILE CMakeQtPath${CMAKE_CXX_COMPILER_ID}.txt)
 if (EXISTS ${PROJECT_SOURCE_DIR}/${QT_PATH_FILE})
     file(STRINGS ${QT_PATH_FILE} CMAKE_PREFIX_PATH)
 else ()
