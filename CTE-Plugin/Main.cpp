@@ -2,8 +2,9 @@
 #include <QFileDialog>
 
 #include "VersionInfo.h"
-#include "../Libraries/Dialog/Dialog.h"
 #include "../Libraries/CTECore/CTECore.h"
+#include "../Libraries/Dialog/Message.h"
+#include "../Libraries/Dialog/Warning.h"
 
 int main(int argc, char *argv[])
 {
