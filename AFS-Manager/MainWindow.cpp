@@ -250,20 +250,19 @@ inline void MainWindow::populateRowCell(const int &row, const int &column, QTabl
 
 void MainWindow::startExporting(const QList<uint32_t> &list, const std::string &path)
 {
-	unpacker = new Unpacker(afs, list, path);
+	//unpacker = new Unpacker(afs, list, path);
 
 	progressUnpacker = new Progress("Unpacker", std::string("Exporting ") + afs->getFilename(list[0]) + "...", QString::fromLocal8Bit(":/Unpack"));
 	progressUnpacker->setMaximum(list.size());
 
-	connect(this, SIGNAL(exportFile()), unpacker, SLOT(exportFile()));
-	connect(unpacker, SIGNAL(progressFile(const char*)), SLOT(progressFile(const char*)));
-	connect(unpacker, SIGNAL(errorFile(const char*)), SLOT(errorFile(const char*)));
-	connect(unpacker, SIGNAL(exportDone()), this, SLOT(exportDone()));
-
+	//connect(this, SIGNAL(exportFile()), unpacker, SLOT(exportFile()));
+	//connect(unpacker, SIGNAL(progressFile(const char*)), SLOT(progressFile(const char*)));
+	//connect(unpacker, SIGNAL(errorFile(const char*)), SLOT(errorFile(const char*)));
+	//connect(unpacker, SIGNAL(exportDone()), this, SLOT(exportDone()));
 
 	connect(progressUnpacker, SIGNAL(finished(int)), this, SLOT(exportAbort(int)));
 
-	unpacker->start();
+	//unpacker->start();
 	progressUnpacker->show();
 	//unpacker->exportDone();
 
@@ -499,9 +498,14 @@ void MainWindow::exportAbort(int i)
 	qDebug() << "Risultato chiusura: " << i;
 #endif
 
-	unpacker->quit();
 
-	Warning warning("Abort", "Cancel operation?");
+	delete progressUnpacker;
+	progressUnpacker = nullptr;
+
+	//delPointer(progressUnpacker);
+	//unpacker->quit();
+
+	/*Warning warning("Abort", "Cancel operation?");
 	warning.exec();
 
 	if (warning.getReply() == Reply::Left) {
@@ -511,7 +515,7 @@ void MainWindow::exportAbort(int i)
 	else {
 		unpacker->start();
 		progressUnpacker->show();
-	}
+	}*/
 }
 
 /*void MainWindow::error(const QString &filename, bool multi)
