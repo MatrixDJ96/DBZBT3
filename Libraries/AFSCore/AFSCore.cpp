@@ -1,5 +1,6 @@
 #include <sstream>
 #include <limits>
+#include <string.h> //memset
 
 #include "AFSCore.h"
 
@@ -44,7 +45,7 @@ AFS_File::AFS_File(const std::string &afsName) : afsName(afsName), fileCount(0)
 	 */
 
 	inFile.seekg(0, std::ios::end);
-	if (inFile.tellg() > std::numeric_limits<uint32_t>::max()) {
+    if (inFile.tellg() > std::numeric_limits<uint32_t>::max()) { //Remember: pos_type is on 128bit
 		error.tooLarge = true;
 		inFile.close();
 		return;
@@ -80,6 +81,10 @@ AFS_File::AFS_File(const std::string &afsName) : afsName(afsName), fileCount(0)
 	}
 
 	inFile.close();
+
+    /* Cache */
+    cache = std::vector<CacheElement>(fileCount+1);
+    loadCache();
 }
 
 AFS_File::~AFS_File() = default;
@@ -422,3 +427,178 @@ void AFS_File::loadFileDesc(std::fstream &inFile)
 	}
 }
 
+void AFS_File::loadCache()
+{
+    for(int i=0; i<fileCount; ++i) {
+        cache[i].reservedSpace = fileInfo[i+1].address - fileInfo[i].address;
+    }
+
+    // The last file (fileCount^th file) is the raw AFL. It's reserved space must be calculated in this way
+    cache[fileCount].reservedSpace = afsSize - fileInfo[fileCount].address;
+}
+
+AvailableSpaces AFS_File::getAvailableSpaces(const int &index) const
+{
+    if(fileCount <= 1 || index < 0 || index >= fileCount)
+    {
+        return AvailableSpaces(0,0);
+    }
+
+    if(index == 0)
+    {
+        return AvailableSpaces(
+            0,
+            cache[1].reservedSpace - fileInfo[1].size
+        );
+    }
+
+    if(index == fileCount - 1){
+        return AvailableSpaces(
+            cache[index-1].reservedSpace - fileInfo[index-1].size,
+            0
+        );
+    }
+
+    return AvailableSpaces(
+        cache[index-1].reservedSpace - fileInfo[index-1].size,
+        cache[index+1].reservedSpace - fileInfo[index+1].size
+    );
+}
+
+void AFS_File::enlargeFileBottom(const int &index, const uint32_t &size)
+{
+    if(fileInfo.size() <= 1 || index < 0 || index >= fileCount - 1)
+        return;
+
+    /* First: some calcs... */
+    uint32_t followingFileSize = fileInfo[index+1].size;
+    uint32_t followindOldAddress = fileInfo[index+1].address;
+    uint32_t followindNewAddress = followindOldAddress + size;
+
+    /* Second: move down the following file index + 1 */
+    char* buffer = new char[followingFileSize];
+    getFile(index+1, buffer);
+    std::fstream outFile;
+    if (!openAFS(outFile, std::ios::in | std::ios::out))
+        return;
+    outFile.seekg(followindNewAddress, std::ios::beg);
+    outFile.write(buffer, followingFileSize);
+    delPointer(buffer);
+
+    /* Third: set all zeros in the new space created */
+    buffer = new char[size];
+    memset(buffer,0x00,size);
+    outFile.seekg(followindOldAddress, std::ios::beg);
+    outFile.write(buffer, size);
+    delPointer(buffer);
+
+    outFile.close();
+
+    /* Fourth: update info, desc and cache*/
+    fileInfo[index+1].address = followindNewAddress;
+    cache[index].reservedSpace += size;
+    commitFileInfo();
+}
+
+void AFS_File::enlargeFileTop(const int &index, const uint32_t &size)
+{
+    if(fileInfo.size() <= 1 || index < 1 || index >= fileCount)
+        return;
+
+    uint32_t indexSize = fileInfo[index].size;
+    uint32_t newAddress = fileInfo[index].address - size;
+
+    /* Backup of index */
+    char* backup = new char[indexSize];
+    getFile(index, backup);
+
+    fileInfo[index].address = newAddress;
+
+    commitFileInfo();
+
+    /* Update cache */
+    cache[index-1].reservedSpace -= size;
+
+    /* Restore index */
+    std::fstream outFile;
+    if (!openAFS(outFile, std::ios::in | std::ios::out))
+        return;
+    outFile.seekg(newAddress, std::ios::beg);
+    outFile.write(backup, indexSize);
+    char* buffer = new char[size];
+    memset(buffer, 0x00, size);
+    outFile.write(buffer, size);
+    delPointer(buffer);
+    outFile.close();
+
+    /* Clean */
+    delPointer(backup);
+}
+
+uint32_t AFS_File::rebuild(const std::string &newFilePath, const std::vector<uint32_t> &newReservedSpaces)
+{
+    uint32_t writtenBytes;
+
+    std::fstream outFile;
+    outFile.open(newFilePath, std::ios::out | std::ios::binary);
+    if(!outFile.is_open())
+        return 0;
+    outFile.write((const char*)&afsHeader, sizeof(afsHeader));
+    outFile.write((const char*)&fileCount, sizeof(fileCount));
+    writtenBytes = 8;
+
+    uint32_t nextAdd = fileInfo[0].address;
+    for(auto i=0; i<fileCount+1; ++i) {
+        outFile.write((const char*)&nextAdd, sizeof(nextAdd));
+        outFile.write((const char*)&fileInfo[i].size, sizeof(fileInfo[i].size));
+        writtenBytes += 8;
+        if(i < fileCount)
+            nextAdd += newReservedSpaces[i];
+    }
+
+    // Zeros until first file
+    uint32_t zero = 0;
+    while(writtenBytes < fileInfo[0].address){
+        outFile.write((const char*)&zero, sizeof(zero));
+        writtenBytes += 4;
+    }
+
+    // All files
+    char* file;
+    uint32_t fileSize;
+    uint32_t toWrite;
+    for(auto i=0; i<fileCount; ++i) {
+        getFile(i,file);
+        fileSize = fileInfo[i].size;
+        fileSize = fileSize > newReservedSpaces[i] ? newReservedSpaces[i] : fileSize;
+        outFile.write(file,fileSize);
+        writtenBytes += fileSize;
+        delPointer(file);
+        // Fill the remaining reserved space
+        if(newReservedSpaces[i] > fileSize) {
+            toWrite = newReservedSpaces[i]-fileSize;
+            file = new char[toWrite];
+            memset(file,0x00,toWrite);
+            outFile.write(file,toWrite);
+            writtenBytes += toWrite;
+            delPointer(file);
+        }
+    }
+
+    // Last file
+    getFile(fileCount,file);
+    fileSize = fileInfo[fileCount].size;
+    outFile.write(file,fileSize);
+    writtenBytes += fileSize;
+    delPointer(file);
+    if(cache[fileCount].reservedSpace > fileInfo[fileCount].size) {
+        toWrite = cache[fileCount].reservedSpace - fileInfo[fileCount].size;
+        file = new char[toWrite];
+        memset(file,0x00,toWrite);
+        outFile.write(file,toWrite);
+        writtenBytes += toWrite;
+        delPointer(file);
+    }
+
+    return writtenBytes;
+}

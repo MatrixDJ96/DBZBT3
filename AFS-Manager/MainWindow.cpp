@@ -1,6 +1,8 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <chrono>
+#include <QMessageBox>
+#include <QMetaObject>
 
 #ifdef DBZBT3_DEBUG
 #include <QDebug>
@@ -9,14 +11,29 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
+#include "modifyreservedspacesdialog.h"
+#include "aboutdialog.h"
+
 using namespace Shared;
+
+
+MainWindow::RebuilderThread::RebuilderThread(std::string newFilePath, std::vector<uint32_t> newReservedSpaces, AFS_File *afs) {
+    this->newFilePath = newFilePath;
+    this->newReservedSpaces = newReservedSpaces;
+    this->afs = afs;
+}
+
+void MainWindow::RebuilderThread::run() {
+    writtenBytes = afs->rebuild(newFilePath, newReservedSpaces);
+}
+
 
 enum columnID
 {
-	filename, size, reservedSpace, dateModified, address
+    filename, size, reservedSpace, dateModified, address, afterRebuild
 };
 
-MainWindow::MainWindow(const std::string &name, const std::string &version, QWidget *parent) : QMainWindow(parent), afs(nullptr), unpacker(nullptr), ui(new Ui::MainWindow), progressUnpacker(nullptr)
+MainWindow::MainWindow(const std::string &name, const std::string &version, QWidget *parent) : QMainWindow(parent), afs(nullptr), unpacker(nullptr), ui(new Ui::MainWindow), progressUnpacker(nullptr), loadingDialog(new LoadingDialog)
 {
 	// create actions for context menu
 	actionExportSelected = new QAction(this);
@@ -66,6 +83,7 @@ MainWindow::~MainWindow()
 {
 	delPointer(afs);
 	delPointer(ui);
+    loadingDialog->deleteLater();
 }
 
 void MainWindow::openAFS(const std::string &name)
@@ -121,6 +139,10 @@ void MainWindow::openAFS(const std::string &name)
 
 	// TODO -> remove
 	ui->usedRam->setText(("Used RAM: " + getStringSize(getUsedRam())).c_str());
+
+    // Enable actions
+    ui->actionRebuild->setEnabled(true);
+    ui->actionImportFromFolder->setEnabled(true);
 }
 
 void MainWindow::connectCellChanged()
@@ -160,8 +182,8 @@ void MainWindow::drawFileList()
 	ui->afsSize->setText(("AFS size: " + getStringSize(afs->getAFSSize())).c_str());
 
 	// generate columns
-	ui->tableWidget->setColumnCount(5); // this enable also 'Address' columns... useful only for debugging purposes
-	ui->tableWidget->setHorizontalHeaderLabels(QString("Filename;Size;Reserved space;Date modified;Address").split(";"));
+    ui->tableWidget->setColumnCount(6); // this enable also 'Address' columns... useful only for debugging purposes
+    ui->tableWidget->setHorizontalHeaderLabels(QString("Filename;Size;Reserved space;Date modified;Address;Res space after rebuild").split(";"));
 
 	// set default row height and alignment
 	ui->tableWidget->insertRow(0);
@@ -196,8 +218,16 @@ void MainWindow::drawFileList()
 		populateRowCell(i, columnID::size, item);
 
 		// reservedSpace
-		item = new QTableWidgetItem(QString::number(vfi[i + 1].address - fi.address));
-		populateRowCell(i, columnID::reservedSpace, item);
+        QColor colorGreen(0,255,0);
+        uint32_t reservedSpace = vfi[i + 1].address - fi.address;
+        bool resSpaceTooBig = true;
+        if(fi.size == reservedSpace || (fi.size % 2048 != 0 && fi.size / 2048 * 2048 + 2048 == reservedSpace))
+            resSpaceTooBig = false;
+        item = new QTableWidgetItem(QString::number(reservedSpace));
+        if(resSpaceTooBig)
+            populateRowCell(i, columnID::reservedSpace, item, &colorGreen);
+        else
+            populateRowCell(i, columnID::reservedSpace, item);
 
 		// date
 		QString date = fd.day < 10 ? "0" + QString::number(fd.day) : QString::number(fd.day);
@@ -217,6 +247,14 @@ void MainWindow::drawFileList()
 		// fileAddress
 		item = new QTableWidgetItem(QString::number(fi.address));
 		populateRowCell(i, columnID::address, item);
+
+        // afterRebuild
+        item = new QTableWidgetItem(QString::number(reservedSpace));
+        if(resSpaceTooBig)
+            populateRowCell(i, columnID::afterRebuild, item, &colorGreen);
+        else
+            populateRowCell(i, columnID::afterRebuild, item);
+        item->setFlags(item->flags() ^ Qt::ItemIsEditable);
 	}
 
 	// adjust columns
@@ -241,15 +279,33 @@ QList<uint32_t> MainWindow::getSelectedRows() const
 	return ret;
 }
 
-inline void MainWindow::populateRowCell(const int &row, const int &column, QTableWidgetItem *item)
+inline void MainWindow::populateRowCell(const int &row, const int &column, QTableWidgetItem *item, const QColor* color)
 {
 	item->setFlags(item->flags() ^ Qt::ItemIsEditable);
 	item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+    if(color) {
+        item->setTextColor(*color);
+    }
 	ui->tableWidget->setItem(row, column, item);
 }
 
 void MainWindow::startExporting(const QList<uint32_t> &list, const std::string &path)
 {
+    /*
+     * 1 element in the list -> no progress bar
+     * 2+ elements in the list -> progress bar
+     */
+
+    if(list.size() == 0)
+        return;
+
+    if(list.size() == 1)
+    {
+        afs->exportFile(list[0],path);
+        return;
+    }
+
+    /* With more than 1 element in the list */
 	//unpacker = new Unpacker(afs, list, path);
 
 	progressUnpacker = new Progress("Unpacker", std::string("Exporting ") + afs->getFilename(list[0]) + "...", QString::fromLocal8Bit(":/Unpack"));
@@ -418,6 +474,20 @@ void MainWindow::on_actionSave_triggered()
 		message.exec();
 	}
 }
+
+void MainWindow::on_actionImportFromFolder_triggered()
+{
+    QString dirPath = QFileDialog::getExistingDirectory();
+    if(dirPath == "")
+        return;
+    QDir dir(dirPath);
+    QStringList filesList = dir.entryList(QDir::Files);
+    std::vector<std::string> filesVector(filesList.size());
+    int i = 0;
+    for(QString s : filesList) {
+        filesVector[i++] = s.toLocal8Bit().toStdString();
+    }
+}
 // ---------- end menu bar ----------
 
 void MainWindow::on_actionUnpackAFS_triggered()
@@ -569,6 +639,7 @@ void MainWindow::on_actionExportSelected_triggered()
 
 	if (list.size() == 1) {
 		path = QFileDialog::getSaveFileName(this, "Save file", QString::fromLocal8Bit(afs->getFilename(list[0])), "File (*)").toLocal8Bit().toStdString();
+
 	}
 	else {
 		path = QFileDialog::getExistingDirectory().toLocal8Bit().toStdString();
@@ -594,7 +665,7 @@ void MainWindow::on_actionImportFile_triggered()
 	// TODO -> check return value
 	uint8_t result = afs->importFile(index, path);
 	if (result == 2) {
-		Message message("Error", "Before file import, reserved space must be increased...\nFunction not yet implemented", Type::Error);
+        Message message("Error", "Before file import, reserved space must be increased...", Type::Error);
 		message.exec();
 	}
 	else if (result == 1) {
@@ -610,18 +681,118 @@ void MainWindow::on_actionImportFile_triggered()
 
 void MainWindow::on_actionModifyReservedSpace_triggered()
 {
+	int index = getSelectedRows()[0];
+
+    AvailableSpaces as = afs->getAvailableSpaces(index);
+
+    std::cout << as.before << " | " << as.after << '\n';
+    std::cout.flush();
+
+    if(as.before < 2048 && as.after < 2048) {
+        QMessageBox qmb;
+        qmb.setWindowTitle("Not enough space");
+        qmb.setText("Not enough space from the previous and the following file.");
+        qmb.exec();
+        return;
+    }
+
+    QMessageBox qmb;
+    qmb.setWindowTitle("Warning");
+    qmb.setText("This action will automatically save the AFS file!");
+    qmb.exec();
+
+    ModifyReservedSpacesDialog mrsd(as.before, as.after);
+    mrsd.exec();
+
+    if(mrsd.spaceFromPrevious == 0 && mrsd.spaceFromFollowing == 0)
+        return;
+
+    std::cout << mrsd.spaceFromPrevious << " | " << mrsd.spaceFromFollowing << " (*)\n";
+    std::cout.flush();
+
+    if(mrsd.spaceFromFollowing != 0)
+    {
+        afs->enlargeFileBottom(index,mrsd.spaceFromFollowing);
+    }
+
+    if(mrsd.spaceFromPrevious != 0)
+    {
+        afs->enlargeFileTop(index,mrsd.spaceFromPrevious);
+    }
+
+    drawFileList();
 }
 // ---------- end context menu ----------
 
 void MainWindow::slotCellChanged(const int &row, const int &column)
 {
 	QTableWidgetItem *item = ui->tableWidget->item(row, column);
-	std::string text = item->text().toLocal8Bit().toStdString();
-	if (text.size() > 32) {
-		text = text.substr(0, 32);
-		disconnect(connectionCellChanged);
-		item->setText(text.c_str());
-		connectCellChanged();
-	}
-	afs->changeFilename((uint32_t)row, text);
+
+    if(column == columnID::filename) {
+        std::string text = item->text().toLocal8Bit().toStdString();
+        if (text.size() > 32) {
+            text = text.substr(0, 32);
+            disconnect(connectionCellChanged);
+            item->setText(text.c_str());
+            connectCellChanged();
+        }
+        afs->changeFilename((uint32_t)row, text);
+    } else if(column == columnID::afterRebuild) {
+        QColor defaultColor(0,0,0);
+        QColor colorGreen(0,255,0);
+        QColor redColor(255,0,0);
+
+        QTableWidgetItem *itemResSpace = ui->tableWidget->item(row, columnID::reservedSpace);
+        uint32_t resSpace = itemResSpace->text().toUInt();
+        uint32_t newResSpace = item->text().toUInt();
+        if(newResSpace % 2048)
+            newResSpace = newResSpace / 2048 * 2048 + 2048;
+        item->setText(QString::number(newResSpace));
+        item->setTextColor( newResSpace == resSpace ? defaultColor : (newResSpace > resSpace ? colorGreen : redColor));
+    }
+}
+
+void MainWindow::on_actionAbout_triggered()
+{
+    AboutDialog ad;
+    ad.exec();
+}
+
+void MainWindow::on_actionRebuild_triggered()
+{
+    std::string newFilePath = QFileDialog::getSaveFileName(this, "Save AFS file", "", "AFS file (*.afs)").toLocal8Bit().toStdString();
+    if(newFilePath == "")
+        return;
+
+    uint32_t fileCount = ui->tableWidget->rowCount();
+    std::vector<uint32_t> newReservedSpaces(fileCount);
+    for(auto i=0; i<fileCount; ++i) {
+        QTableWidgetItem* item = ui->tableWidget->item(i,columnID::afterRebuild);
+        if(!item)
+            std::cerr << "AHHHHHHHHHHHH!\n";
+        newReservedSpaces[i] = item->text().toUInt();
+    }
+
+    loadingDialog->show();
+
+    rebuilderThread = new RebuilderThread(newFilePath, newReservedSpaces, afs);
+    connect(rebuilderThread,SIGNAL(finished()),this,SLOT(rebuildCompleted()));
+    rebuilderThread->start();
+}
+
+void MainWindow::rebuildCompleted()
+{
+    QMessageBox qmb;
+    uint32_t wb = rebuilderThread->writtenBytes;
+    if(wb == 0) {
+        qmb.setWindowTitle("Error");
+        qmb.setText("Error saving the new afs.");
+    } else {
+        qmb.setWindowTitle("Rebuild complete");
+        qmb.setText(QStringLiteral("Rebuild complete without errors.\n")+QString::number(wb)+" bytes written.");
+    }
+    loadingDialog->close();
+    qmb.exec();
+    disconnect(rebuilderThread,SIGNAL(finished()),this,SLOT(rebuildCompleted()));
+    rebuilderThread->deleteLater();
 }
