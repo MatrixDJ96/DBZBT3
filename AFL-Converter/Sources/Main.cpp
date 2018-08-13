@@ -2,9 +2,8 @@
 #include <QFileDialog>
 
 #include "VersionInfo.h"
-#include "../Libraries/AFLCore/AFLCore.h"
-#include "../Libraries/Dialog/Message.h"
-#include "../Libraries/Dialog/Warning.h"
+#include "AFLCore.h"
+//#include "Dialog.h"
 
 int main(int argc, char *argv[])
 {
@@ -30,13 +29,13 @@ int main(int argc, char *argv[])
 			bool overwrite = false;
 			std::string outName(afl.getOutName());
 			if (Shared::fileExists(outName)) {
-				Warning warning(title, "Do you want to overwrite\n'" + Shared::getFilename(outName) + "'?");
-				warning.exec();
-				Reply reply = warning.getReply();
-				if (reply == Reply::Left) {
-					overwrite = true;
-				}
-				else if (reply == Reply::Right) {
+				//Warning warning(title, "Do you want to overwrite\n'" + Shared::getFilename(outName) + "'?");
+				//warning.exec();
+				//Reply reply = warning.getReply();
+				//if (reply == Reply::Left) {
+				//	overwrite = true;
+				//}
+				// if (reply == Reply::Right) {
 					outName = QFileDialog::getSaveFileName().toLocal8Bit().toStdString();
 					if (!outName.empty()) {
 						if (Shared::fileExists(outName)) {
@@ -47,27 +46,27 @@ int main(int argc, char *argv[])
 					else {
 						return EXIT_FAILURE;
 					}
-				}
-				else {
+				//}
+				//else {
 					return EXIT_FAILURE;
-				}
+				//}
 			}
 
 			bool result = afl.Convert();
 			if (result) {
-				Message message(title, "'" + Shared::getFilename(outName) + "'\nsuccessfully " + (overwrite ? "overwritten" : "created"));
-				message.exec();
+				//Message message(title, "'" + Shared::getFilename(outName) + "'\nsuccessfully " + (overwrite ? "overwritten" : "created"));
+				//message.exec();
 				return EXIT_SUCCESS;
 			}
 			else {
-				Message message(title, "Unable to convert\n'" + Shared::getFilename(inName) + "'", Type::Error);
-				message.exec();
+				//Message message(title, "Unable to convert\n'" + Shared::getFilename(inName) + "'", Type::Error);
+				//message.exec();
 				return EXIT_FAILURE;
 			}
 		}
 		else {
-			Message message(title, "Nothing to do!");
-			message.exec();
+			//Message message(title, "Nothing to do!");
+			//message.exec();
 			return EXIT_SUCCESS;
 		}
 	}

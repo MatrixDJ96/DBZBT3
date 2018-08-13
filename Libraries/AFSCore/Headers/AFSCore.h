@@ -1,7 +1,7 @@
 #ifndef AFSCORE_H
 #define AFSCORE_H
 
-#include "../AFLCore/AFLCore.h"
+#include "AFLCore.h"
 
 struct FileInfo
 {
