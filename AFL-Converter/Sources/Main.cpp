@@ -3,7 +3,7 @@
 
 #include "VersionInfo.h"
 #include "AFLCore.h"
-//#include "Dialog.h"
+#include "Dialog.h"
 
 int main(int argc, char *argv[])
 {
@@ -12,6 +12,10 @@ int main(int argc, char *argv[])
 	std::string title(PRODUCTNAME_STR);
 	title += " v";
 	title += PRODUCTVERSION_STR;
+
+	Dialog dialog(DialogType::Info, QDialogButtonBox::StandardButton::Reset | QDialogButtonBox::StandardButton::Abort);
+	return dialog.exec();
+
 
 	std::string inName;
 	if (argc > 1) {
@@ -36,19 +40,19 @@ int main(int argc, char *argv[])
 				//	overwrite = true;
 				//}
 				// if (reply == Reply::Right) {
-					outName = QFileDialog::getSaveFileName().toLocal8Bit().toStdString();
-					if (!outName.empty()) {
-						if (Shared::fileExists(outName)) {
-							overwrite = true;
-						}
-						afl.setOutName(outName);
+				outName = QFileDialog::getSaveFileName().toLocal8Bit().toStdString();
+				if (!outName.empty()) {
+					if (Shared::fileExists(outName)) {
+						overwrite = true;
 					}
-					else {
-						return EXIT_FAILURE;
-					}
+					afl.setOutName(outName);
+				}
+				else {
+					return EXIT_FAILURE;
+				}
 				//}
 				//else {
-					return EXIT_FAILURE;
+				return EXIT_FAILURE;
 				//}
 			}
 

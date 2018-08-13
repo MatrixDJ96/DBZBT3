@@ -54,7 +54,7 @@ public:
 
 	void changeFilename(const uint32_t &index, const std::string &name);
 
-	const char* getFilename(const uint32_t& index) const;
+	const char *getFilename(const uint32_t &index) const;
 
 	bool exportFile(const uint32_t &index, const std::string &path) const; // TODO -> check if file already exists
 

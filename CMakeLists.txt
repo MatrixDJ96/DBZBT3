@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 
 # Project name
 project(DBZBT3)
@@ -98,7 +98,7 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS ${SHARED_FORMS_PATH})
 
 # Define Shared files
 set(SHARED_Q_OBJECTS ${SHARED_HEADERS_PATH}/Dialog.h)
-set(SHARED_RESOURCES ${SHARED_RESOURCES_PATH}/Shared.rc)
+set(SHARED_RESOURCES ${SHARED_RESOURCES_PATH}/Dialog.qrc ${SHARED_RESOURCES_PATH}/Shared.rc)
 set(SHARED_SOURCES ${SHARED_SOURCES_PATH}/Dialog.cpp ${SHARED_SOURCES_PATH}/Shared.cpp)
 
 # Define AFLCore files
