@@ -13,3 +13,4 @@ CTestTestfile.cmake
 *release*
 Binaries
 CMakeQtPath*.txt
+CMakeLists.txt.user

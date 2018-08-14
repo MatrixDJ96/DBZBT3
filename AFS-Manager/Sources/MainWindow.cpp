@@ -499,10 +499,10 @@ void MainWindow::exportAbort(int i)
 #endif
 
 
-	delete progressUnpacker;
-	progressUnpacker = nullptr;
+    //delete progressUnpacker;
+    //progressUnpacker = nullptr;
 
-	//delPointer(progressUnpacker);
+    delPointer(progressUnpacker);
 	//unpacker->quit();
 
 	/*Warning warning("Abort", "Cancel operation?");

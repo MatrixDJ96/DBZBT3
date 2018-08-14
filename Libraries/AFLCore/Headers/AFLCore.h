@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "../Shared/Shared.h"
+#include "Shared.h"
 
 /* Default AFL header */
 const uint32_t aflHeader[] = {0x004C4641, 0x00000001, 0xFFFFFFFF};
