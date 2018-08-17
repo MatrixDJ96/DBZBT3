@@ -1,7 +1,7 @@
 #include <sstream>
 #include <limits>
 
-#include "AFSCore.h"
+#include <AFSCore.h>
 
 using namespace Shared;
 

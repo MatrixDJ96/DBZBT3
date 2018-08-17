@@ -1,7 +1,7 @@
 #include <cstring>
 #include <sstream>
 
-#include "Shared.h"
+#include <Shared.h>
 
 /* 1048576 -> 1 megabyte */
 static constexpr uint64_t max_size = 1048576 * 512;

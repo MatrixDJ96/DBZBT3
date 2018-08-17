@@ -54,6 +54,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+#Libraries/Shared/Forms/Dialog.ui
+
 # QT += widgets
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
@@ -97,27 +99,32 @@ include_directories(${SHARED_RESOURCES_PATH})
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${SHARED_FORMS_PATH})
 
 # Define Shared files
-set(SHARED_Q_OBJECTS ${SHARED_HEADERS_PATH}/Dialog.h)
-set(SHARED_RESOURCES ${SHARED_RESOURCES_PATH}/Dialog.qrc ${SHARED_RESOURCES_PATH}/Shared.rc)
-set(SHARED_SOURCES ${SHARED_SOURCES_PATH}/Dialog.cpp ${SHARED_SOURCES_PATH}/Shared.cpp)
+set(SHARED_Q_OBJECTS)
+set(SHARED_RESOURCES ${SHARED_RESOURCES_PATH}/Shared.rc)
+set(SHARED_SOURCES ${SHARED_SOURCES_PATH}/Shared.cpp)
 
 # Define AFLCore files
 set(AFLCORE_Q_OBJECTS)
-set(AFLCORE_SOURCES ${AFLCORE_SOURCES_PATH}/AFLCore.cpp)
 set(AFLCORE_RESOURCES ${AFLCORE_RESOURCES_PATH}/AFLCore.rc)
+set(AFLCORE_SOURCES ${AFLCORE_SOURCES_PATH}/AFLCore.cpp)
 
 # Define AFSCore files
 set(AFSCORE_Q_OBJECTS)
-set(AFSCORE_SOURCES ${AFSCORE_SOURCES_PATH}/AFSCore.cpp)
 set(AFSCORE_RESOURCES ${AFSCORE_RESOURCES_PATH}/AFSCore.rc)
+set(AFSCORE_SOURCES ${AFSCORE_SOURCES_PATH}/AFSCore.cpp)
 
 # Define AFL-Converter files
-set(SHARED_Q_OBJECTS ${SHARED_HEADERS_PATH}/Dialog.h)
-set(AFL_CONVERTER_SOURCES ${AFL_CONVERTER_SOURCES_PATH}/Main.cpp)
+set(AFL_CONVERTER_Q_OBJECTS)
 set(AFL_CONVERTER_RESOURCES ${AFL_CONVERTER_RESOURCES_PATH}/AFL-Converter.rc)
+set(AFL_CONVERTER_SOURCES ${AFL_CONVERTER_SOURCES_PATH}/Main.cpp)
 
 #[[
 # Define AFS source code
+
+# ${SHARED_HEADERS_PATH}/Dialog.h
+# ${SHARED_SOURCES_PATH}/Dialog.cpp
+# ${SHARED_RESOURCES_PATH}/Dialog.qrc
+
 set(AFS_MANAGER_SOURCES ${AFS_MANAGER_PATH}/Main.cpp ${AFS_MANAGER_PATH}/MainWindow.cpp ${AFS_MANAGER_PATH}/Unpacker.cpp)
 set(AFS_MANAGER_RESOURCES ${AFS_MANAGER_PATH}/AFS-Manager.rc ${AFS_MANAGER_PATH}/MainWindow.qrc)
 
@@ -129,13 +136,11 @@ set(CTE_CORE_RESOURCES ${CTE_CORE_PATH}/CTECore.rc)
 ]]
 
 # Shared
-set(SHARED_LIBRARIES Qt5::Widgets)
-if (MINGW)
-    set(SHARED_LIBRARIES ${SHARED_LIBRARIES} psapi)
-endif ()
 add_library(Shared SHARED ${SHARED_SOURCES} ${SHARED_RESOURCES} ${SHARED_Q_OBJECTS})
 target_include_directories(Shared PUBLIC ${SHARED_HEADERS_PATH})
-target_link_libraries(Shared ${SHARED_LIBRARIES})
+if (MINGW)
+    target_link_libraries(Shared psapi)
+endif ()
 
 # AFLCore
 add_library(AFLCore SHARED ${AFLCORE_SOURCES} ${AFLCORE_RESOURCES})
@@ -150,7 +155,7 @@ target_link_libraries(AFSCore AFLCore)
 # AFL-Converter
 add_executable(AFL-Converter ${AFL_CONVERTER_SOURCES} ${AFL_CONVERTER_RESOURCES})
 target_include_directories(AFL-Converter PUBLIC ${AFL_CONVERTER_HEADERS_PATH})
-target_link_libraries(AFL-Converter AFLCore)
+target_link_libraries(AFL-Converter AFLCore Qt5::Widgets)
 
 #[[
 # CTECore
