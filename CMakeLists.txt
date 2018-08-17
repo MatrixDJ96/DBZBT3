@@ -54,8 +54,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-#Libraries/Shared/Forms/Dialog.ui
-
 # QT += widgets
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
@@ -91,12 +89,19 @@ set(AFL_CONVERTER_HEADERS_PATH ${AFL_CONVERTER_PATH}/Headers)
 set(AFL_CONVERTER_RESOURCES_PATH ${AFL_CONVERTER_PATH}/Resources)
 set(AFL_CONVERTER_SOURCES_PATH ${AFL_CONVERTER_PATH}/Sources)
 
-#set(AFS_MANAGER_PATH AFS-Manager)
+
+# Define AFS-Manager paths
+set(AFS_MANAGER_PATH AFS-Manager)
+set(AFS_MANAGER_FORMS_PATH ${AFS_MANAGER_PATH}/Forms)
+set(AFS_MANAGER_HEADERS_PATH ${AFS_MANAGER_PATH}/Headers)
+set(AFS_MANAGER_RESOURCES_PATH ${AFS_MANAGER_PATH}/Resources)
+set(AFS_MANAGER_SOURCES_PATH ${AFS_MANAGER_PATH}/Sources)
+
 #set(CTE_PLUGIN_PATH CTE-Plugin)
 
 # Define various paths
 include_directories(${SHARED_RESOURCES_PATH})
-set(CMAKE_AUTOUIC_SEARCH_PATHS ${SHARED_FORMS_PATH})
+set(CMAKE_AUTOUIC_SEARCH_PATHS ${AFS_MANAGER_FORMS_PATH})
 
 # Define Shared files
 set(SHARED_Q_OBJECTS)
@@ -118,17 +123,12 @@ set(AFL_CONVERTER_Q_OBJECTS)
 set(AFL_CONVERTER_RESOURCES ${AFL_CONVERTER_RESOURCES_PATH}/AFL-Converter.rc)
 set(AFL_CONVERTER_SOURCES ${AFL_CONVERTER_SOURCES_PATH}/Main.cpp)
 
-#[[
-# Define AFS source code
+# Define AFS-Manager files
+set(AFS_MANAGER_Q_OBJECTS ${AFS_MANAGER_HEADERS_PATH}/MainWindow.h ${AFS_MANAGER_HEADERS_PATH}/Dialog.h)
+set(AFS_MANAGER_RESOURCES ${AFS_MANAGER_RESOURCES_PATH}/AFS-Manager.rc ${AFS_MANAGER_RESOURCES_PATH}/MainWindow.qrc ${AFS_MANAGER_RESOURCES_PATH}/Dialog.qrc)
+set(AFS_MANAGER_SOURCES  ${AFS_MANAGER_SOURCES_PATH}/Main.cpp ${AFS_MANAGER_SOURCES_PATH}/MainWindow.cpp ${AFS_MANAGER_SOURCES_PATH}/Dialog.cpp)
 
-# ${SHARED_HEADERS_PATH}/Dialog.h
-# ${SHARED_SOURCES_PATH}/Dialog.cpp
-# ${SHARED_RESOURCES_PATH}/Dialog.qrc
-
-set(AFS_MANAGER_SOURCES ${AFS_MANAGER_PATH}/Main.cpp ${AFS_MANAGER_PATH}/MainWindow.cpp ${AFS_MANAGER_PATH}/Unpacker.cpp)
-set(AFS_MANAGER_RESOURCES ${AFS_MANAGER_PATH}/AFS-Manager.rc ${AFS_MANAGER_PATH}/MainWindow.qrc)
-
-# Define CTE source code
+#[[Define CTE source code
 set(CTE_PLUGIN_SOURCES ${CTE_PLUGIN_PATH}/Main.cpp)
 set(CTE_PLUGIN_RESOURCES ${CTE_PLUGIN_PATH}/CTE-Plugin.rc)
 set(CTE_CORE_SOURCES ${CTE_CORE_PATH}/CTECore.cpp)
@@ -157,14 +157,15 @@ add_executable(AFL-Converter ${AFL_CONVERTER_SOURCES} ${AFL_CONVERTER_RESOURCES}
 target_include_directories(AFL-Converter PUBLIC ${AFL_CONVERTER_HEADERS_PATH})
 target_link_libraries(AFL-Converter AFLCore Qt5::Widgets)
 
+# AFS-Manager
+add_executable(AFS-Manager ${AFS_MANAGER_SOURCES} ${AFS_MANAGER_RESOURCES})
+target_include_directories(AFS-Manager PUBLIC ${AFS_MANAGER_HEADERS_PATH})
+target_link_libraries(AFS-Manager AFSCore Qt5::Widgets)
+
 #[[
 # CTECore
 add_library(CTECore SHARED ${CTE_CORE_SOURCES} ${CTE_CORE_RESOURCES})
 target_link_libraries(CTECore Shared)
-
-# AFS-Manager
-add_executable(AFS-Manager ${AFS_MANAGER_SOURCES} ${AFS_MANAGER_RESOURCES})
-target_link_libraries(AFS-Manager AFSCore Dialog)
 
 # CTE-Plugin
 add_executable(CTE-Plugin ${CTE_PLUGIN_SOURCES} ${CTE_PLUGIN_RESOURCES})

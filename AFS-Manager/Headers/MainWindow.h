@@ -5,10 +5,7 @@
 #include <QMainWindow>
 #include <QTableWidget>
 
-#include "Unpacker.h"
-#include "../Libraries/Dialog/Message.h"
-#include "../Libraries/Dialog/Progress.h"
-#include "../Libraries/Dialog/Warning.h"
+#include <Unpacker.h>
 
 namespace Ui
 {
@@ -47,7 +44,7 @@ private:
 	QAction *actionModifyReservedSpace;
 	AFS_File *afs;
 	QMetaObject::Connection connectionCellChanged;
-	Progress *progressUnpacker;
+	//Progress *progressUnpacker;
 	Unpacker *unpacker;
 	Ui::MainWindow *ui;
 

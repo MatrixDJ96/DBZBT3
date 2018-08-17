@@ -6,8 +6,8 @@
 #include <QDebug>
 #endif
 
-#include "MainWindow.h"
-#include "ui_MainWindow.h"
+#include <MainWindow.h>
+#include <ui_MainWindow.h>
 
 using namespace Shared;
 
@@ -16,7 +16,7 @@ enum columnID
 	filename, size, reservedSpace, dateModified, address
 };
 
-MainWindow::MainWindow(const std::string &name, const std::string &version, QWidget *parent) : QMainWindow(parent), afs(nullptr), unpacker(nullptr), ui(new Ui::MainWindow), progressUnpacker(nullptr)
+MainWindow::MainWindow(const std::string &name, const std::string &version, QWidget *parent) : QMainWindow(parent), afs(nullptr), unpacker(nullptr), ui(new Ui::MainWindow)//, progressUnpacker(nullptr)
 {
 	// create actions for context menu
 	actionExportSelected = new QAction(this);

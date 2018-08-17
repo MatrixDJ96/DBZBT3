@@ -3,7 +3,7 @@
 
 #include <QThread>
 
-#include "../Libraries/AFSCore/AFSCore.h"
+#include <AFSCore.h>
 
 class Unpacker : public QObject
 {

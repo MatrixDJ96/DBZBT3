@@ -20,9 +20,6 @@ int main(int argc, char *argv[])
 		inName = argv[1];
 	}
 
-	QMessageBox mb;
-
-
 	if (!fileExists(inName) || inName.empty()) {
 		inName = QFileDialog::getOpenFileName().toLocal8Bit().toStdString();
 	}
