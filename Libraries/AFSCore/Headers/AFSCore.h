@@ -23,6 +23,20 @@ struct FileDesc
 	uint32_t size;
 };
 
+struct CacheElement{
+    CacheElement(const uint32_t reservedSpace_) : reservedSpace(reservedSpace_) {}
+    CacheElement() {}
+
+    uint32_t reservedSpace;
+};
+
+struct AvailableSpaces {
+    AvailableSpaces() : before(0), after(0) {}
+    AvailableSpaces(const uint32_t before_, const uint32_t after_) : before(before_), after(after_) {}
+
+    uint32_t before, after;
+};
+
 /* Default AFS header */
 const uint32_t afsHeader = 0x00534641;
 
@@ -71,6 +85,14 @@ public:
 	bool commitFileInfo() const;
 
 	bool commitFileDesc() const;
+	
+	AvailableSpaces getAvailableSpaces(const int &index) const;
+
+    void enlargeFileBottom(const int &index, const uint32_t &size);
+
+    void enlargeFileTop(const int &index, const uint32_t &size);
+
+    uint32_t rebuild(const std::string& newFilePath, const std::vector<uint32_t>& newReservedSpaces);
 
 private:
 	bool getFile(const uint32_t &index, char *&file) const;
@@ -81,6 +103,8 @@ private:
 
 	void loadFileDesc(std::fstream &inFile);
 
+    void loadCache();
+
 public:
 	const std::string afsName;
 
@@ -90,6 +114,7 @@ private:
 	uint32_t fileCount;
 	std::vector<FileInfo> fileInfo;
 	std::vector<FileDesc> fileDesc;
+    std::vector<CacheElement> cache;
 };
 
 #endif // AFSCORE_H

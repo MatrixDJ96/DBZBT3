@@ -9,5 +9,7 @@
         <file alias="SaveWithName">Images/SaveWithName.png</file>
         <file alias="Settings">Images/Setting.png</file>
         <file alias="Unpack">Images/Unpack.png</file>
+        <file>Images/AboutImage.png</file>
+        <file>Images/Loading.gif</file>
     </qresource>
 </RCC>

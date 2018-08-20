@@ -15,7 +15,7 @@ Unpacker::~Unpacker()
 		thread.quit();
 		thread.wait();
 	}
-};
+}
 
 void Unpacker::start()
 {

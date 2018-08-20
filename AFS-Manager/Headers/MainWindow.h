@@ -5,6 +5,8 @@
 #include <QMainWindow>
 #include <QTableWidget>
 
+#include "Unpacker.h"
+#include "loadingdialog.h"
 #include <Unpacker.h>
 
 namespace Ui
@@ -18,7 +20,6 @@ Q_OBJECT
 
 public:
 	MainWindow(const std::string &name, const std::string &version, QWidget *parent = 0);
-
 	~MainWindow();
 
 private:
@@ -30,13 +31,27 @@ private:
 
 	QList<uint32_t> getSelectedRows() const;
 
-	void populateRowCell(const int &row, const int &column, QTableWidgetItem *item);
+    void populateRowCell(const int &row, const int &column, QTableWidgetItem *item, const QColor *color = 0);
 
 	void startExporting(const QList<uint32_t> &list, const std::string &path);
 
 	virtual void dragEnterEvent(QDragEnterEvent *event);
 
 	virtual void dropEvent(QDropEvent *event);
+
+private:
+    class RebuilderThread : public QThread {
+    private:
+        std::string newFilePath;
+        std::vector<uint32_t> newReservedSpaces;
+        AFS_File* afs;
+    public:
+        uint32_t writtenBytes;
+    public:
+        RebuilderThread(std::string newFilePath, std::vector<uint32_t> newReservedSpaces, AFS_File* afs);
+        //Override
+        void run();
+    };
 
 private:
 	QAction *actionExportSelected;
@@ -47,9 +62,10 @@ private:
 	//Progress *progressUnpacker;
 	Unpacker *unpacker;
 	Ui::MainWindow *ui;
+    LoadingDialog* loadingDialog;
+    RebuilderThread* rebuilderThread;
 
 public slots:
-
 	void openAFS(const std::string &name);
 
 private slots:
@@ -89,6 +105,14 @@ private slots:
 	void on_actionModifyReservedSpace_triggered();
 
 	void slotCellChanged(const int &row, const int &column);
+
+    void on_actionAbout_triggered();
+
+    void on_actionRebuild_triggered();
+
+    void rebuildCompleted();
+
+    void on_actionImportFromFolder_triggered();
 
 signals:
 	void exportFile();
