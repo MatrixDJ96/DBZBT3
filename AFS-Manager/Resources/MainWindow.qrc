@@ -11,5 +11,6 @@
         <file alias="About">Images/About.png</file>
         <file alias="Exporter">Images/Exporter.png</file>
         <file alias="Importer">Images/Importer.png</file>
+        <file alias="Icon">Images/Icon.png</file>
     </qresource>
 </RCC>

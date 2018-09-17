@@ -6,6 +6,10 @@ using namespace Shared;
 
 Worker::Worker(Type type, AFS_File *afs, const std::map<uint32_t, std::string> &list, QObject *parent) : type(type), afs(afs), errors(0), list(list), iter(this->list.begin()), skipAll(false), QThread(parent)
 {
+	if (type != Type::Export && type != Type::Import && type != Type::Rebuild) {
+		throw std::out_of_range("Wrong Worker type!");
+	}
+
 	setTerminationEnabled(true);
 
 	/*constexpr int size = 128 * 1024 * 1024;

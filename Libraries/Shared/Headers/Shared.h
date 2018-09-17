@@ -14,7 +14,7 @@ namespace Shared
 
 	enum class Type
 	{
-		Export, Import, Rebuild
+		Export, Import, Rebuild, Loading
 	};
 
 	/* Function to safe-delete pointer */

@@ -22,7 +22,7 @@ AFS_File::FileInfo::FileInfo() : address(0), size(0)
 {
 }
 
-AFS_File::FileDesc::FileDesc() : name(""), year(0), month(0), day(0), hour(0), minute(0), second(0), size(0)
+AFS_File::FileDesc::FileDesc() : name(""), year(0), month(0), day(0), hour(0), min(0), sec(0), size(0)
 {
 }
 
@@ -104,8 +104,9 @@ AFS_File::AFS_File(const std::string &afsName) : afsName(backSlashtoSlash(afsNam
 	}
 	else {
 		fileInfo[fileCount].reservedSpace = afsSize - fileInfo[fileCount].address;
-		fileInfo[fileCount].reservedSpaceRebuild = fileInfo[fileCount].reservedSpace;
+		fileInfo[fileCount].reservedSpaceRebuild = getOptimizedReservedSpace(fileCount);
 	}
+
 
 	inFile.close();
 }
@@ -184,8 +185,8 @@ bool AFS_File::loadFileDesc(std::fstream &inFile, bool constructor)
 		inFile.read(reinterpret_cast<char *>(&fileDesc[i].month), sizeof(FileDesc::month));
 		inFile.read(reinterpret_cast<char *>(&fileDesc[i].day), sizeof(FileDesc::day));
 		inFile.read(reinterpret_cast<char *>(&fileDesc[i].hour), sizeof(FileDesc::hour));
-		inFile.read(reinterpret_cast<char *>(&fileDesc[i].minute), sizeof(FileDesc::minute));
-		inFile.read(reinterpret_cast<char *>(&fileDesc[i].second), sizeof(FileDesc::second));
+		inFile.read(reinterpret_cast<char *>(&fileDesc[i].min), sizeof(FileDesc::min));
+		inFile.read(reinterpret_cast<char *>(&fileDesc[i].sec), sizeof(FileDesc::sec));
 		inFile.read(reinterpret_cast<char *>(&fileDesc[i].size), sizeof(FileDesc::size));
 	}
 
@@ -207,7 +208,7 @@ uint32_t AFS_File::getFileCount() const
 	return fileCount;
 }
 
-const AFS_File::FileInfoExtended &AFS_File::getFileInfo(uint32_t index) const
+AFS_File::FileInfoExtended AFS_File::getFileInfo(uint32_t index) const
 {
 	if (index > fileCount) {
 		throw std::out_of_range(OOF_STRING);
@@ -221,7 +222,7 @@ const std::vector<AFS_File::FileInfoExtended> &AFS_File::getFileInfo() const
 	return fileInfo;
 }
 
-const AFS_File::FileDesc &AFS_File::getFileDesc(uint32_t index) const
+AFS_File::FileDesc AFS_File::getFileDesc(uint32_t index) const
 {
 	if (index >= fileCount) {
 		throw std::out_of_range(OOF_STRING);
@@ -277,13 +278,17 @@ std::pair<uint32_t, uint32_t> AFS_File::getReservedSpace(uint32_t index) const
 	}
 }
 
-uint32_t AFS_File::getOptimizedReservedSpace(uint32_t index) const
+uint32_t AFS_File::getOptimizedReservedSpace(uint32_t num, Type type) const
 {
-	if (index > fileCount) {
-		throw std::out_of_range(OOF_STRING);
+	if (type == Type::Index) {
+		if (num > fileCount) {
+			throw std::out_of_range(OOF_STRING);
+		}
+		return ((fileInfo[num].size / 2048) * 2048 + (fileInfo[num].size % 2048 != 0 ? 2048 : 0));
 	}
-
-	return ((fileInfo[index].size / 2048) * 2048 + (fileInfo[index].size % 2048 != 0 ? 2048 : 0));
+	else {
+		return ((num / 2048) * 2048 + (num % 2048 != 0 ? 2048 : 0));
+	}
 }
 
 std::pair<bool, bool> AFS_File::hasOverSpace(uint32_t index) const
@@ -331,8 +336,8 @@ bool AFS_File::commitFileDesc() const
 		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].month), sizeof(FileDesc::month));
 		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].day), sizeof(FileDesc::day));
 		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].hour), sizeof(FileDesc::hour));
-		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].minute), sizeof(FileDesc::minute));
-		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].second), sizeof(FileDesc::second));
+		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].min), sizeof(FileDesc::min));
+		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].sec), sizeof(FileDesc::sec));
 		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].size), sizeof(FileDesc::size));
 	}
 
@@ -437,8 +442,8 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path)
 		fileDesc[index].month = lt->tm_mon + 1;
 		fileDesc[index].day = lt->tm_mday;
 		fileDesc[index].hour = lt->tm_hour;
-		fileDesc[index].minute = lt->tm_min;
-		fileDesc[index].second = lt->tm_sec;
+		fileDesc[index].min = lt->tm_min;
+		fileDesc[index].sec = lt->tm_sec;
 
 		commitFileInfo() && commitFileDesc();
 
@@ -565,8 +570,8 @@ bool AFS_File::rebuild(const std::string &path)
 	outFile.write(reinterpret_cast<const char *>(&header), sizeof(header));
 	outFile.write(reinterpret_cast<const char *>(&fileCount), sizeof(fileCount));
 
-	uint32_t size = (16 + 8 * fileCount);
-	fileInfo[0].address = ((size / 2048) * 2048 + (size % 2048 != 0 ? 2048 : 0));
+	uint32_t size = 16 + 8 * fileCount;
+	fileInfo[0].address = getOptimizedReservedSpace(size, Type::Size);
 
 	// write fileInfo
 	for (uint32_t i = 0; i <= fileCount; ++i) {
@@ -595,8 +600,8 @@ bool AFS_File::rebuild(const std::string &path)
 		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].month), sizeof(FileDesc::month));
 		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].day), sizeof(FileDesc::day));
 		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].hour), sizeof(FileDesc::hour));
-		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].minute), sizeof(FileDesc::minute));
-		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].second), sizeof(FileDesc::second));
+		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].min), sizeof(FileDesc::min));
+		outFile.write(reinterpret_cast<const char *>(&fileDesc[i].sec), sizeof(FileDesc::sec));
 
 		outFile.write(reinterpret_cast<const char *>(&fileInfo[i].size), sizeof(FileInfo::size)); // to have an updated value
 	}

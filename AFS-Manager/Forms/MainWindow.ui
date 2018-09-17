@@ -6,15 +6,9 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>760</width>
-    <height>400</height>
+    <width>800</width>
+    <height>420</height>
    </rect>
-  </property>
-  <property name="minimumSize">
-   <size>
-    <width>600</width>
-    <height>300</height>
-   </size>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -30,25 +24,6 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <item row="5" column="0">
-     <widget class="QTableWidget" name="tableWidget">
-      <property name="contextMenuPolicy">
-       <enum>Qt::CustomContextMenu</enum>
-      </property>
-      <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectRows</enum>
-      </property>
-      <property name="showGrid">
-       <bool>true</bool>
-      </property>
-      <property name="sortingEnabled">
-       <bool>true</bool>
-      </property>
-      <attribute name="verticalHeaderVisible">
-       <bool>false</bool>
-      </attribute>
-     </widget>
-    </item>
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="topHorizontalLayout">
       <property name="spacing">
@@ -68,11 +43,7 @@
        </widget>
       </item>
       <item alignment="Qt::AlignRight">
-       <widget class="QLabel" name="loadingTime">
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
+       <widget class="QLabel" name="loadingTime"/>
       </item>
      </layout>
     </item>
@@ -88,30 +59,41 @@
        <number>6</number>
       </property>
       <item alignment="Qt::AlignLeft">
-       <widget class="QLabel" name="afsSize">
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
+       <widget class="QLabel" name="afsSize"/>
       </item>
       <item>
        <widget class="QLabel" name="freeSpace">
-        <property name="text">
-         <string/>
-        </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
       <item alignment="Qt::AlignRight">
-       <widget class="QLabel" name="afsFileCount">
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
+       <widget class="QLabel" name="afsFileCount"/>
       </item>
      </layout>
+    </item>
+    <item row="5" column="0">
+     <widget class="QTableWidget" name="tableWidget">
+      <property name="contextMenuPolicy">
+       <enum>Qt::CustomContextMenu</enum>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="showGrid">
+       <bool>true</bool>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+      <attribute name="verticalHeaderVisible">
+       <bool>false</bool>
+      </attribute>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -120,7 +102,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>760</width>
+     <width>800</width>
      <height>21</height>
     </rect>
    </property>
@@ -302,8 +284,4 @@
   <include location="../Resources/MainWindow.qrc"/>
  </resources>
  <connections/>
- <slots>
-  <slot>showContextMenu(QPoint)</slot>
-  <slot>cellChanged(int,int)</slot>
- </slots>
 </ui>

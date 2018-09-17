@@ -86,9 +86,14 @@ public:
 		uint16_t month;
 		uint16_t day;
 		uint16_t hour;
-		uint16_t minute;
-		uint16_t second;
+		uint16_t min;
+		uint16_t sec;
 		uint32_t size;
+	};
+
+	enum class Type
+	{
+		Index, Size
 	};
 
 public:
@@ -102,11 +107,11 @@ public:
 
 	uint32_t getFileCount() const;
 
-	const FileInfoExtended &getFileInfo(uint32_t index) const;
+	FileInfoExtended getFileInfo(uint32_t index) const;
 
 	const std::vector<FileInfoExtended> &getFileInfo() const;
 
-	const FileDesc &getFileDesc(uint32_t index) const;
+	FileDesc getFileDesc(uint32_t index) const;
 
 	const std::vector<FileDesc> &getFileDesc() const;
 
@@ -114,7 +119,7 @@ public:
 
 	std::pair<uint32_t, uint32_t> getReservedSpace(uint32_t index) const;
 
-	uint32_t getOptimizedReservedSpace(uint32_t index) const;
+	uint32_t getOptimizedReservedSpace(uint32_t num, Type type = Type::Index) const;
 
 	std::pair<bool, bool> hasOverSpace(uint32_t index) const;
 

@@ -115,8 +115,14 @@ void MainWindow::openAFS(const std::string &path, bool firstCall)
 	ui->menuTools->setEnabled(true);
 
 	auto start = std::chrono::steady_clock::now();
+
+	//setCursor(QCursor(Qt::WaitCursor));
+
 	drawFileList();
 	updateFreeSpaceLabel();
+
+	//setCursor(QCursor(Qt::ArrowCursor));
+
 	auto end = std::chrono::steady_clock::now();
 
 	ui->loadingTime->setText("Loading time: " + QString::number((double)std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0) + " sec");
@@ -202,18 +208,16 @@ void MainWindow::populateRowCell(int row, int column, QTableWidgetItem *item)
 
 void MainWindow::adjustColumns()
 {
-	int padding = 20;
+	/*ui->tableWidget->horizontalHeader()->setResizeContentsPrecision(-1);
+	ui->tableWidget->resizeColumnsToContents();*/
 
-	ui->tableWidget->verticalHeader()->setFixedWidth(ui->tableWidget->verticalHeader()->sizeHint().width() + padding / 2);
-
-	ui->tableWidget->resizeColumnsToContents();
-
-	ui->tableWidget->setColumnWidth(columnID::number, ui->tableWidget->columnWidth(columnID::number) + padding);
-	ui->tableWidget->setColumnWidth(columnID::filename, ui->tableWidget->columnWidth(columnID::filename) + padding);
-	ui->tableWidget->setColumnWidth(columnID::size, ui->tableWidget->columnWidth(columnID::size) + padding);
-	ui->tableWidget->setColumnWidth(columnID::reservedSpace, ui->tableWidget->columnWidth(columnID::reservedSpace) + padding);
-	ui->tableWidget->setColumnWidth(columnID::dateModified, ui->tableWidget->columnWidth(columnID::dateModified) + padding);
-	ui->tableWidget->setColumnWidth(columnID::address, ui->tableWidget->columnWidth(columnID::address) + padding);
+	ui->tableWidget->setColumnWidth(columnID::number, ui->tableWidget->columnWidth(columnID::number) + 15);
+	ui->tableWidget->setColumnWidth(columnID::filename, ui->tableWidget->columnWidth(columnID::filename) + 50);
+	ui->tableWidget->setColumnWidth(columnID::size, ui->tableWidget->columnWidth(columnID::size) + 25);
+	ui->tableWidget->setColumnWidth(columnID::reservedSpace, ui->tableWidget->columnWidth(columnID::reservedSpace) + 25);
+	ui->tableWidget->setColumnWidth(columnID::afterRebuild, ui->tableWidget->columnWidth(columnID::afterRebuild) + 25);
+	ui->tableWidget->setColumnWidth(columnID::dateModified, ui->tableWidget->columnWidth(columnID::dateModified) + 40);
+	ui->tableWidget->setColumnWidth(columnID::address, ui->tableWidget->columnWidth(columnID::address) + 20);
 }
 
 void MainWindow::drawFileList()
@@ -244,15 +248,16 @@ void MainWindow::drawFileList()
 #endif
 
 	// generate columns
-	auto columns = QString("N.;Filename;Size;Reserved space;After rebuild;Date modified;Address").split(";");
+	auto columns = QString("N.;Filename;Size;Reserved space;Reserved space\n(after rebuild);Date modified;Address").split(";");
 	ui->tableWidget->setColumnCount(columns.size());
 	ui->tableWidget->setHorizontalHeaderLabels(columns);
 
 	// set default row height and alignment
 	ui->tableWidget->insertRow(0);
-	ui->tableWidget->resizeRowToContents(0);
 	ui->tableWidget->verticalHeader()->setDefaultSectionSize(ui->tableWidget->rowHeight(0));
 	ui->tableWidget->verticalHeader()->setDefaultAlignment(Qt::AlignHCenter);
+	ui->tableWidget->resizeRowToContents(0);
+	ui->tableWidget->resizeColumnsToContents();
 
 	// generate rows
 	ui->tableWidget->setRowCount(fileCount);
@@ -289,18 +294,7 @@ void MainWindow::drawFileList()
 		}
 
 		// date
-		QString date = vfd[i].day < 10 ? "0" + QString::number(vfd[i].day) : QString::number(vfd[i].day);
-		date += "-";
-		date += vfd[i].month < 10 ? "0" + QString::number(vfd[i].month) : QString::number(vfd[i].month);
-		date += "-";
-		date += vfd[i].year < 1000 ? vfd[i].year < 100 ? vfd[i].year < 10 ? "000" + QString::number(vfd[i].year) : "00" + QString::number(vfd[i].year) : "0" + QString::number(vfd[i].year) : QString::number(vfd[i].year);
-		date += " ";
-		date += vfd[i].hour < 10 ? "0" + QString::number(vfd[i].hour) : QString::number(vfd[i].hour);
-		date += ":";
-		date += vfd[i].minute < 10 ? "0" + QString::number(vfd[i].minute) : QString::number(vfd[i].minute);
-		date += ":";
-		date += vfd[i].second < 10 ? "0" + QString::number(vfd[i].second) : QString::number(vfd[i].second);
-		item = new TableWidgetItem(date);
+		item = new TableWidgetItem(QString::number(vfd[i].day).rightJustified(2, '0') + "-" + QString::number(vfd[i].month).rightJustified(2, '0') + "-" + QString::number(vfd[i].year).rightJustified(4, '0') + " " + QString::number(vfd[i].hour).rightJustified(2, '0') + ":" + QString::number(vfd[i].min).rightJustified(2, '0') + ":" + QString::number(vfd[i].sec).rightJustified(2, '0'));
 		populateRowCell(i, columnID::dateModified, item);
 
 		// fileAddress
@@ -380,12 +374,13 @@ void MainWindow::startWorker(Type type, const std::map<uint32_t, std::string> &l
 
 void MainWindow::updateFreeSpaceLabel()
 {
-	uint64_t freeSpace = 0;
-	uint64_t freeSpaceRebuild = 0;
-
 	auto fileCount = afs->getFileCount();
 
-	for (uint32_t i = 0; i < fileCount; ++i) {
+	uint64_t freeSpace = afs->getFileInfo(0).address - afs->getOptimizedReservedSpace(16 + 8 * fileCount, AFS_File::Type::Size);
+	uint64_t freeSpaceRebuild = 0;
+
+
+	for (uint32_t i = 0; i <= fileCount; ++i) {
 		auto rs = afs->getReservedSpace(i);
 		auto ors = afs->getOptimizedReservedSpace(i);
 
@@ -623,7 +618,7 @@ void MainWindow::refreshRow(uint32_t index)
 
 	if (row != -1) {
 		auto fileInfo = afs->getFileInfo(index);
-		auto fileDesc = afs->getFileDesc(index);
+		auto fileDesc = (index != afs->getFileCount() ? afs->getFileDesc(index) : AFS_File::FileDesc());
 
 		// size
 		auto item = ui->tableWidget->item(row, columnID::size);
@@ -663,18 +658,7 @@ void MainWindow::refreshRow(uint32_t index)
 
 		// date
 		item = ui->tableWidget->item(row, columnID::dateModified);
-		QString date = fileDesc.day < 10 ? "0" + QString::number(fileDesc.day) : QString::number(fileDesc.day);
-		date += "-";
-		date += fileDesc.month < 10 ? "0" + QString::number(fileDesc.month) : QString::number(fileDesc.month);
-		date += "-";
-		date += fileDesc.year < 1000 ? fileDesc.year < 100 ? fileDesc.year < 10 ? "000" + QString::number(fileDesc.year) : "00" + QString::number(fileDesc.year) : "0" + QString::number(fileDesc.year) : QString::number(fileDesc.year);
-		date += " ";
-		date += fileDesc.hour < 10 ? "0" + QString::number(fileDesc.hour) : QString::number(fileDesc.hour);
-		date += ":";
-		date += fileDesc.minute < 10 ? "0" + QString::number(fileDesc.minute) : QString::number(fileDesc.minute);
-		date += ":";
-		date += fileDesc.second < 10 ? "0" + QString::number(fileDesc.second) : QString::number(fileDesc.second);
-		item->setText(date);
+		item->setText(QString::number(fileDesc.day).rightJustified(2, '0') + "-" + QString::number(fileDesc.month).rightJustified(2, '0') + "-" + QString::number(fileDesc.year).rightJustified(4, '0') + " " + QString::number(fileDesc.hour).rightJustified(2, '0') + ":" + QString::number(fileDesc.min).rightJustified(2, '0') + ":" + QString::number(fileDesc.sec).rightJustified(2, '0'));
 	}
 }
 

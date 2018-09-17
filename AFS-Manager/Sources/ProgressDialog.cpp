@@ -29,6 +29,9 @@ ProgressDialog::ProgressDialog(Type type, uint32_t max_value, uint32_t init_valu
 		ui->pixmap->setPixmap(QPixmap(":/Importer"));
 		setWindowIcon(QIcon(*ui->pixmap->pixmap()));
 		ui->progressBar->setRange(0, 0);
+	} else {
+		setWindowTitle("AFS-Manager");
+		ui->progressBar->setRange(0, 0);
 	}
 
 	/*constexpr int size = 128 * 1024 * 1024;
