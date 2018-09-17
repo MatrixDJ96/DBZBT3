@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="Exit">Images/Exit.png</file>
+        <file alias="Export">Images/Export.png</file>
+        <file alias="Import">Images/Import.png</file>
+        <file alias="Lens">Images/Lens.png</file>
+        <file alias="Open">Images/Open.png</file>
+        <file alias="Save">Images/Save.png</file>
+        <file alias="SaveWithName">Images/SaveWithName.png</file>
+        <file alias="Settings">Images/Setting.png</file>
+        <file alias="About">Images/About.png</file>
+        <file alias="Exporter">Images/Exporter.png</file>
+        <file alias="Importer">Images/Importer.png</file>
+    </qresource>
+</RCC>
