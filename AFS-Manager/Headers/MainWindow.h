@@ -6,6 +6,7 @@
 
 #include <AFSCore.h>
 #include <TableWidgetItem.h>
+#include <Worker.h>
 
 namespace Ui
 {
@@ -38,22 +39,32 @@ private:
 
 	std::vector<uint32_t> getSelectedIndexes() const;
 
-	void startWorker(Shared::Type type, const std::map<uint32_t, std::string> &list);
+	void startWorker(Shared::Type type, const std::map<uint32_t, std::string> &list, AFS_File *afs = nullptr);
 
 private:
 	Ui::MainWindow *ui;
+
 	AFS_File *afs;
+
 	bool enableCellChanged;
+
+	Worker *oldWorker;
 
 public slots:
 	void openAFS(const std::string &path, bool firstCall = true);
 
+	bool rebuildAFS(AFS_File *afs = nullptr);
+
 private slots:
+	void toAdjust_p1();
+
+	void toAdjust_p2(const std::string &path);
+
 	void updateFreeSpaceLabel();
 
 	void abort();
 
-	void errorFile(uint8_t result);
+	void errorFile();
 
 	void refreshRow(uint32_t index);
 
@@ -88,6 +99,7 @@ private slots:
 	void on_tableWidget_customContextMenuRequested(QPoint);
 
 signals:
+
 	void done();
 
 	void skipFile();

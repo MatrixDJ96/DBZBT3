@@ -11,7 +11,6 @@
 #include <MessageBox.h>
 #include <ProgressDialog.h>
 #include <ReservedSpaceDialog.h>
-#include <Worker.h>
 
 using namespace Shared;
 
@@ -20,7 +19,7 @@ enum columnID
 	number, filename, size, reservedSpace, afterRebuild, dateModified, address
 };
 
-MainWindow::MainWindow(const std::string &name, const std::string &version, QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), afs(nullptr), enableCellChanged(false)//, loadingDialog(new LoadingDialog)
+MainWindow::MainWindow(const std::string &name, const std::string &version, QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), afs(nullptr), enableCellChanged(false), oldWorker(nullptr)
 {
 	// connect actions to context menu and setup ui
 	ui->setupUi(this);
@@ -128,6 +127,41 @@ void MainWindow::openAFS(const std::string &path, bool firstCall)
 	ui->loadingTime->setText("Loading time: " + QString::number((double)std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0) + " sec");
 }
 
+bool MainWindow::rebuildAFS(AFS_File *afs)
+{
+	bool newAFS = this->afs != afs;
+
+	if (afs == nullptr) {
+		if (this->afs != nullptr) {
+			afs = this->afs;
+		}
+		else {
+			return false; // prevent possible future errors
+		}
+	}
+
+	std::string path;
+	do {
+		path = QFileDialog::getSaveFileName(this, "Save rebuilded AFS file", getFilename(afs->afsName).c_str(), "AFS file (*.afs)").toLocal8Bit().toStdString();
+		if (afs->afsName == path) {
+			ShowError(this, "Error", "Unable to rebuild AFS over the original!\nSelect another location and try again");
+		}
+	} while (afs->afsName == path);
+
+	if (path.empty()) {
+		return false;
+	}
+
+	if (newAFS) {
+		startWorker(Type::Rebuild, {{0, path}}, afs);
+	}
+	else {
+		startWorker(Type::Rebuild, {{0, path}});
+	}
+
+	return true;
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
 	event->acceptProposedAction();
@@ -212,10 +246,10 @@ void MainWindow::adjustColumns()
 	ui->tableWidget->resizeColumnsToContents();*/
 
 	ui->tableWidget->setColumnWidth(columnID::number, ui->tableWidget->columnWidth(columnID::number) + 15);
-	ui->tableWidget->setColumnWidth(columnID::filename, ui->tableWidget->columnWidth(columnID::filename) + 50);
-	ui->tableWidget->setColumnWidth(columnID::size, ui->tableWidget->columnWidth(columnID::size) + 25);
-	ui->tableWidget->setColumnWidth(columnID::reservedSpace, ui->tableWidget->columnWidth(columnID::reservedSpace) + 25);
-	ui->tableWidget->setColumnWidth(columnID::afterRebuild, ui->tableWidget->columnWidth(columnID::afterRebuild) + 25);
+	ui->tableWidget->setColumnWidth(columnID::filename, ui->tableWidget->columnWidth(columnID::filename) + 60);
+	ui->tableWidget->setColumnWidth(columnID::size, ui->tableWidget->columnWidth(columnID::size) + 26);
+	ui->tableWidget->setColumnWidth(columnID::reservedSpace, ui->tableWidget->columnWidth(columnID::reservedSpace) + 27);
+	ui->tableWidget->setColumnWidth(columnID::afterRebuild, ui->tableWidget->columnWidth(columnID::afterRebuild) + 27);
 	ui->tableWidget->setColumnWidth(columnID::dateModified, ui->tableWidget->columnWidth(columnID::dateModified) + 40);
 	ui->tableWidget->setColumnWidth(columnID::address, ui->tableWidget->columnWidth(columnID::address) + 20);
 }
@@ -274,20 +308,23 @@ void MainWindow::drawFileList()
 		item->setTextAlignment(item->textAlignment() ^ Qt::AlignHCenter);
 
 		// size
-		item = new TableWidgetItem(QString::number(vfi[i].size), TableWidgetItem::Type::Integer);
+		//item = new TableWidgetItem(QString::number(vfi[i].size), TableWidgetItem::Type::Integer);
+		item = new TableWidgetItem(getStringSize(vfi[i].size).c_str(), TableWidgetItem::Type::Integer);
 		populateRowCell(i, columnID::size, item);
 
 		auto hasOverSpace = afs->hasOverSpace(i);
 
 		// reservedSpace
-		item = new TableWidgetItem(QString::number(vfi[i].reservedSpace), TableWidgetItem::Type::Integer);
+		//item = new TableWidgetItem(QString::number(vfi[i].reservedSpace), TableWidgetItem::Type::Integer);
+		item = new TableWidgetItem(getStringSize(vfi[i].reservedSpace).c_str(), TableWidgetItem::Type::Integer);
 		populateRowCell(i, columnID::reservedSpace, item);
 		if (!hasOverSpace.first) {
 			item->setTextColor(Qt::GlobalColor::green);
 		}
 
 		// afterRebuild
-		item = new TableWidgetItem(QString::number(vfi[i].reservedSpaceRebuild), TableWidgetItem::Type::Integer);
+		//item = new TableWidgetItem(QString::number(vfi[i].reservedSpaceRebuild), TableWidgetItem::Type::Integer);
+		item = new TableWidgetItem(getStringSize(vfi[i].reservedSpaceRebuild).c_str(), TableWidgetItem::Type::Integer);
 		populateRowCell(i, columnID::afterRebuild, item);
 		if (!hasOverSpace.second) {
 			item->setTextColor(Qt::GlobalColor::green);
@@ -330,65 +367,56 @@ std::vector<uint32_t> MainWindow::getSelectedIndexes() const
 	return rows;
 }
 
-void MainWindow::startWorker(Type type, const std::map<uint32_t, std::string> &list)
+void MainWindow::startWorker(Type type, const std::map<uint32_t, std::string> &list, AFS_File *afs)
 {
 	if (afs == nullptr) {
-		return; // prevent possible future errors
-	}
-
-	if (list.empty()) {
-		return;
-	}
-
-	auto *worker = new Worker(type, afs, list/*, this*/); // this or not?
-	auto *progressDialog = new ProgressDialog(type, list.size(), 0, this);
-
-	connect(worker, &Worker::started, progressDialog, &ProgressDialog::show);
-	connect(worker, &Worker::done, progressDialog, &ProgressDialog::accept);
-
-	connect(this, &MainWindow::skipFile, worker, &Worker::skipFile);
-	connect(worker, &Worker::errorFile, this, &MainWindow::errorFile);
-
-	if (type != Type::Rebuild) {
-		connect(worker, &Worker::next, progressDialog, &ProgressDialog::next);
-
-		if (type == Type::Import) {
-			connect(worker, &Worker::refreshRow, this, &MainWindow::refreshRow);
-			connect(worker, &Worker::done, this, &MainWindow::updateFreeSpaceLabel);
+		if (this->afs != nullptr) {
+			afs = this->afs;
+		}
+		else {
+			return; // prevent possible future errors
 		}
 	}
 
-	connect(worker, &Worker::progressText, progressDialog, &ProgressDialog::setLabel);
-
-	connect(progressDialog, &ProgressDialog::rejected, worker, &Worker::terminate);
-	connect(worker, &Worker::abort, this, &MainWindow::abort);
-
-	connect(this, &MainWindow::done, worker, &Worker::deleteLater);
-	connect(this, &MainWindow::done, progressDialog, &ProgressDialog::deleteLater);
-
-	connect(worker, &Worker::done, worker, &Worker::deleteLater);
-	connect(worker, &Worker::done, progressDialog, &ProgressDialog::deleteLater);
-
-	worker->start();
-}
-
-void MainWindow::updateFreeSpaceLabel()
-{
-	auto fileCount = afs->getFileCount();
-
-	uint64_t freeSpace = afs->getFileInfo(0).address - afs->getOptimizedReservedSpace(16 + 8 * fileCount, AFS_File::Type::Size);
-	uint64_t freeSpaceRebuild = 0;
-
-
-	for (uint32_t i = 0; i <= fileCount; ++i) {
-		auto rs = afs->getReservedSpace(i);
-		auto ors = afs->getOptimizedReservedSpace(i);
-
-		freeSpace += (rs.first - ors);
-		freeSpaceRebuild += (rs.second - ors);
+	if (list.empty() || (type == Type::Rebuild && list.size() != 1)) {
+		return;
 	}
 
-	ui->freeSpace->setText(("Free space: " + getStringSize(freeSpace) + " (" + getStringSize(freeSpaceRebuild) + ")").c_str());
+	auto *worker = new Worker(type, afs, list, this);
+	auto *progressDialog = new ProgressDialog(type, list.size(), 0, this);
+
+	connect(worker, &Worker::started, progressDialog, &ProgressDialog::show); // show dialog when thread start
+	connect(worker, &Worker::done, progressDialog, &ProgressDialog::accept); // close dialog when thread finish
+
+	connect(this, &MainWindow::skipFile, worker, &Worker::skipFile); // send skip signal to worker
+	connect(worker, &Worker::errorFile, this, &MainWindow::errorFile); // show warning on error
+
+	if (type != Type::Rebuild) {
+		connect(worker, &Worker::next, progressDialog, &ProgressDialog::next); // updated bar on progress
+
+		if (type == Type::Import) {
+			connect(worker, &Worker::toAdjust, this, &MainWindow::toAdjust_p1); // ask to rebuild
+			connect(worker, &Worker::refreshRow, this, &MainWindow::refreshRow); // refresh row of imported file
+			connect(worker, &Worker::refreshRow, this, &MainWindow::updateFreeSpaceLabel); // update free space label on imported file
+		}
+	}
+	else {
+		if (oldWorker != nullptr) {
+			connect(worker, &Worker::rebuilded, this, &MainWindow::toAdjust_p2); // complete import
+		}
+	}
+
+	connect(worker, &Worker::progressText, progressDialog, &ProgressDialog::setLabel); // update label on progress
+
+	connect(progressDialog, &ProgressDialog::rejected, worker, &Worker::terminate); // kill thread on dialog rejected
+	connect(worker, &Worker::abort, this, &MainWindow::abort); // are you sure that you want to abort?
+
+	connect(this, &MainWindow::done, worker, &Worker::deleteLater); // clean worker on abort accepted
+
+	connect(worker, &Worker::done, worker, &Worker::deleteLater); // clean worker on finish
+	connect(worker, &Worker::destroyed, progressDialog, &ProgressDialog::deleteLater); // clean dialog after thread cleaned
+
+	worker->start();
 }
 
 // ---------- menu bar ----------
@@ -517,23 +545,7 @@ void MainWindow::on_actionOptimize_triggered()
 
 void MainWindow::on_actionRebuild_triggered()
 {
-	if (afs == nullptr) {
-		return; // prevent possible future errors
-	}
-
-	std::string path;
-	do {
-		path = QFileDialog::getSaveFileName(this, "Save rebuilded AFS file", getFilename(afs->afsName).c_str(), "AFS file (*.afs)").toLocal8Bit().toStdString();
-		if (afs->afsName == path) {
-			ShowError(this, "Error", "Unable to rebuild AFS over the original!\nSelect another location and try again");
-		}
-	} while (afs->afsName == path);
-
-	if (path.empty()) {
-		return;
-	}
-
-	startWorker(Type::Rebuild, {{0, path}});
+	rebuildAFS();
 }
 
 void MainWindow::on_actionAbout_triggered()
@@ -543,21 +555,110 @@ void MainWindow::on_actionAbout_triggered()
 // ---------- end menu bar ----------
 
 // ---------- various slots ----------
-void MainWindow::abort()
+void MainWindow::toAdjust_p1()
 {
-	auto unpacker = (Worker *)QObject::sender();
+	auto worker = (Worker *)QObject::sender();
 
-	unpacker->wait();
+	worker->wait();
 
-	if (ShowWarning(this, "Abort", "Are you sure that you want to abort?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
-		emit done();
+	auto index = worker->getPosition();
+	auto errors = worker->getErrors();
+
+	auto buttons = QMessageBox::Yes | QMessageBox::No;
+
+	if (errors > 2) {
+		buttons |= QMessageBox::NoToAll;
+	}
+
+	auto reply = ShowError(this, "Error", "Not enought space to import over '" + QString::fromLocal8Bit(afs->getFilename(index).c_str()) + "'...\nDo you to want to auto-adjust reserved space?", buttons);
+
+	if (reply == QMessageBox::Yes) {
+		auto *afs = new AFS_File(*this->afs);
+
+		for (auto item : worker->getList()) {
+			auto size = getFileSize(item.second);
+			auto rs = afs->getReservedSpace(item.first);
+
+			if (size > rs.first) {
+				afs->changeReservedSpace(item.first, afs->getOptimizedReservedSpace(size, AFS_File::Type::Size));
+			}
+		}
+
+		oldWorker = worker; // the magic
+
+		if (!rebuildAFS(afs)) {
+			oldWorker = nullptr;
+			emit done();
+		}
 	}
 	else {
-		unpacker->start();
+		if (reply == QMessageBox::NoToAll) {
+			worker->setSkipAll(true);
+		}
+		worker->skipFile();
 	}
 }
 
-void MainWindow::errorFile(uint8_t result)
+void MainWindow::toAdjust_p2(const std::string &path)
+{
+	if (oldWorker != nullptr) {
+		auto *afs = this->afs;
+		openAFS(path);
+		if (afs != this->afs) {
+			oldWorker->updateAFS(this->afs);
+			oldWorker->start();
+		}
+		else {
+			emit done();
+		}
+		oldWorker = nullptr;
+	}
+}
+
+void MainWindow::updateFreeSpaceLabel()
+{
+	auto fileCount = afs->getFileCount();
+
+	uint64_t freeSpace = afs->getFileInfo(0).address - afs->getOptimizedReservedSpace(16 + 8 * fileCount, AFS_File::Type::Size);
+	uint64_t freeSpaceRebuild = 0;
+
+
+	for (uint32_t i = 0; i <= fileCount; ++i) {
+		auto rs = afs->getReservedSpace(i);
+		auto ors = afs->getOptimizedReservedSpace(i);
+
+		if (rs.first > ors) {
+			freeSpace += (rs.first - ors);
+		}
+		if (rs.second > ors) {
+			freeSpaceRebuild += (rs.second - ors);
+		}
+	}
+
+	ui->freeSpace->setText(("Free space: " + getStringSize(freeSpace) + " (" + getStringSize(freeSpaceRebuild) + ")").c_str());
+}
+
+void MainWindow::abort()
+{
+	auto worker = (Worker *)QObject::sender();
+
+	worker->wait();
+
+	QString type = worker->type == Type::Import ? " import " : (worker->type == Type::Export ? " export" : (worker->type == Type::Rebuild ? " rebuild" : ""));
+
+	if (ShowWarning(this, "Abort", "Are you sure that you want to abort" + type + "?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+		if (oldWorker != nullptr) {
+			oldWorker = nullptr;
+		}
+
+		emit done();
+	}
+	else {
+		worker->start();
+	}
+}
+
+void MainWindow::errorFile()
 {
 	auto worker = (Worker *)QObject::sender();
 
@@ -578,21 +679,13 @@ void MainWindow::errorFile(uint8_t result)
 		reply = ShowError(this, "Error", "Error while extracting '" + QString::fromLocal8Bit(afs->getFilename(index).c_str()) + "'...\nDo you to want to retry?", buttons);
 	}
 	else if (worker->type == Type::Import) {
-		if (result == 2) {
-			reply = ShowError(this, "Error", "Not enought space to import over '" + QString::fromLocal8Bit(afs->getFilename(index).c_str()) + "'...\nDo you to want to auto-adjust reserved space?", buttons);
-		}
-		else {
-			reply = ShowError(this, "Error", "Error while importing over '" + QString::fromLocal8Bit(afs->getFilename(index).c_str()) + "'...\nDo you to want to retry?", buttons);
-		}
+		reply = ShowError(this, "Error", "Error while importing over '" + QString::fromLocal8Bit(afs->getFilename(index).c_str()) + "'...\nDo you to want to retry?", buttons);
 	}
 	else if (worker->type == Type::Rebuild) {
 		reply = ShowError(this, "Error", "Error while rebuilding AFS file...\nDo you to want to retry?", buttons);
 	}
 
 	if (reply == QMessageBox::Yes) {
-		if (worker->type == Type::Import && result == 2) {
-			// TODO: Auto adjust reserved space
-		}
 		worker->start();
 	}
 	else {
@@ -622,13 +715,15 @@ void MainWindow::refreshRow(uint32_t index)
 
 		// size
 		auto item = ui->tableWidget->item(row, columnID::size);
-		item->setText(QString::number(fileInfo.size));
+		//item->setText(QString::number(fileInfo.size));
+		item->setText(getStringSize(fileInfo.size).c_str());
 
 		auto hasOverSpace = afs->hasOverSpace(index);
 
 		// reservedSpace
 		item = ui->tableWidget->item(row, columnID::reservedSpace);
-		item->setText(QString::number(fileInfo.reservedSpace));
+		//item->setText(QString::number(fileInfo.reservedSpace));
+		item->setText(getStringSize(fileInfo.reservedSpace).c_str());
 		if (!hasOverSpace.first) {
 			item->setTextColor(Qt::GlobalColor::green);
 		}
@@ -643,7 +738,8 @@ void MainWindow::refreshRow(uint32_t index)
 
 		// afterRebuild
 		item = ui->tableWidget->item(row, columnID::afterRebuild);
-		item->setText(QString::number(fileInfo.reservedSpaceRebuild));
+		//item->setText(QString::number(fileInfo.reservedSpaceRebuild));
+		item->setText(getStringSize(fileInfo.reservedSpaceRebuild).c_str());
 		if (!hasOverSpace.second) {
 			item->setTextColor(Qt::GlobalColor::green);
 		}

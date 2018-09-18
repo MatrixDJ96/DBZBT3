@@ -111,6 +111,10 @@ AFS_File::AFS_File(const std::string &afsName) : afsName(backSlashtoSlash(afsNam
 	inFile.close();
 }
 
+AFS_File::AFS_File(const AFS_File &afs) : afsName(afs.afsName), error(afs.error), afsSize(afs.afsSize), fileCount(afs.fileCount), fileInfo(afs.fileInfo), fileDesc(afs.fileDesc)
+{
+}
+
 AFS_File::~AFS_File() = default;
 
 uint32_t AFS_File::getHeader()
@@ -346,7 +350,7 @@ bool AFS_File::commitFileDesc() const
 	return !outFile.fail();
 }
 
-bool AFS_File::exportFile(uint32_t index, const std::string &path) const
+bool AFS_File::exportFile(uint32_t index, const std::string &path, char *&content) const
 {
 	if (index > fileCount) {
 		throw std::out_of_range(OOF_STRING);
@@ -363,7 +367,7 @@ bool AFS_File::exportFile(uint32_t index, const std::string &path) const
 		return false; // unable to write file;
 	}
 
-	auto result = writeContent((std::ifstream &)inFile, fileInfo[index].address, outFile, 0, fileInfo[index].size);
+	auto result = writeContent((std::ifstream &)inFile, fileInfo[index].address, outFile, 0, fileInfo[index].size, content);
 
 	inFile.close();
 	outFile.close();
@@ -393,7 +397,7 @@ bool AFS_File::exportAFLCommon(const std::string &path) const
 	return !outFile.fail();
 }
 
-uint8_t AFS_File::importFile(uint32_t index, const std::string &path)
+uint8_t AFS_File::importFile(uint32_t index, const std::string &path, char *&content)
 {
 	// RETURN value:
 	// 0 -> error;
@@ -426,10 +430,10 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path)
 	}
 	else {
 		/* Clean old file inside AFS */
-		eraseContent((std::ofstream &)outFile, fileInfo[index].address, fileInfo[index].size);  // should be added check of return value
+		eraseContent((std::ofstream &)outFile, fileInfo[index].address, fileInfo[index].size, content);  // should be added check of return value
 
 		/* Import new file inside AFS */
-		writeContent(inFile, 0, (std::ofstream &)outFile, fileInfo[index].address, size);
+		writeContent(inFile, 0, (std::ofstream &)outFile, fileInfo[index].address, size, content);
 
 		/* Set new file size */
 		fileInfo[index].size = size;
@@ -461,7 +465,7 @@ uint8_t AFS_File::importAFLCommon(const std::string &path)
 	// 1 -> success;
 	// 2 -> incompatible afl.
 
-	if (!fileExists(path)) {
+	if (!(std::ifstream(path).is_open())) {
 		return 0;  // unable to read file
 	}
 
@@ -546,10 +550,32 @@ void AFS_File::optimize()
 	}
 }
 
-bool AFS_File::rebuild(const std::string &path)
+bool AFS_File::rebuild(const std::string &path, char *&content)
 {
 	if (afsName == path) {
 		return false;
+	}
+
+	auto header = AFS_File::getHeader();
+	auto fileInfo = this->fileInfo;
+
+	// update info
+	uint32_t size = 16 + 8 * fileCount;
+	fileInfo[0].address = getOptimizedReservedSpace(size, Type::Size);
+	for (uint32_t i = 0; i <= fileCount; ++i) {
+		fileInfo[i].reservedSpace = fileInfo[i].reservedSpaceRebuild;
+		if (i != 0) {
+			fileInfo[i].address = fileInfo[i - 1].address + fileInfo[i - 1].reservedSpace;
+			if ((uint64_t)fileInfo[i - 1].address + (uint64_t)fileInfo[i - 1].reservedSpace != fileInfo[i].address) {
+				return false; // unable to set correctly address
+			}
+		}
+		if (fileInfo[i].size > fileInfo[i].reservedSpace) {
+			fileInfo[i].size = fileInfo[i].reservedSpace;
+		}
+	}
+	if ((uint64_t)fileInfo[fileCount].address + (uint64_t)fileInfo[fileCount].size != fileInfo[fileCount].address + fileInfo[fileCount].size) {
+		return false; // unable to rebuild afs (too big)
 	}
 
 	std::fstream inFile;
@@ -563,35 +589,21 @@ bool AFS_File::rebuild(const std::string &path)
 		return false; // unable to create new afs
 	}
 
-	auto fileInfo = this->fileInfo;
-
 	// write header and fileCount
-	auto header = AFS_File::getHeader();
 	outFile.write(reinterpret_cast<const char *>(&header), sizeof(header));
 	outFile.write(reinterpret_cast<const char *>(&fileCount), sizeof(fileCount));
 
-	uint32_t size = 16 + 8 * fileCount;
-	fileInfo[0].address = getOptimizedReservedSpace(size, Type::Size);
-
 	// write fileInfo
 	for (uint32_t i = 0; i <= fileCount; ++i) {
-		fileInfo[i].reservedSpace = fileInfo[i].reservedSpaceRebuild;
-		if (i != 0) {
-			fileInfo[i].address = fileInfo[i - 1].address + fileInfo[i - 1].reservedSpace;
-		}
-		if (fileInfo[i].size > fileInfo[i].reservedSpace) {
-			fileInfo[i].size = fileInfo[i].reservedSpace;
-		}
-
 		outFile.write(reinterpret_cast<const char *>(&fileInfo[i].address), sizeof(FileInfo::address));
 		outFile.write(reinterpret_cast<const char *>(&fileInfo[i].size), sizeof(FileInfo::size));
 	}
 
-	eraseContent((std::ofstream &)outFile, size, fileInfo[0].address - size);
+	eraseContent((std::ofstream &)outFile, size, fileInfo[0].address - size, content);
 
 	for (uint32_t i = 0; i < fileCount; ++i) {
-		writeContent((std::ifstream &)inFile, this->fileInfo[i].address, (std::ofstream &)outFile, fileInfo[i].address, fileInfo[i].size);
-		eraseContent((std::ofstream &)outFile, fileInfo[i].address + fileInfo[i].size, fileInfo[i].reservedSpace - fileInfo[i].size);
+		writeContent((std::ifstream &)inFile, this->fileInfo[i].address, (std::ofstream &)outFile, fileInfo[i].address, fileInfo[i].size, content);
+		eraseContent((std::ofstream &)outFile, fileInfo[i].address + fileInfo[i].size, fileInfo[i].reservedSpace - fileInfo[i].size, content);
 	}
 
 	for (uint32_t i = 0; i < fileCount; ++i) {
@@ -606,10 +618,11 @@ bool AFS_File::rebuild(const std::string &path)
 		outFile.write(reinterpret_cast<const char *>(&fileInfo[i].size), sizeof(FileInfo::size)); // to have an updated value
 	}
 
-	eraseContent((std::ofstream &)outFile, fileInfo[fileCount].address + fileInfo[fileCount].size, fileInfo[fileCount].reservedSpace - fileInfo[fileCount].size);
+	eraseContent((std::ofstream &)outFile, fileInfo[fileCount].address + fileInfo[fileCount].size, fileInfo[fileCount].reservedSpace - fileInfo[fileCount].size, content);
 
 	inFile.close();
 	outFile.close();
 
 	return !outFile.fail();
 }
+

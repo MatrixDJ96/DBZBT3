@@ -37,11 +37,8 @@ namespace Shared
 		}
 	}
 
-	/* Check if file exists */
-	bool fileExists(const std::string &path);
-
-	/* Create file and return result (bool) */
-	bool createFile(const std::string &path);
+	/* Function to return file size */
+	uint64_t getFileSize(const std::string &path);
 
 	/* Function to tranform uppercase chars into lowercase chars */
 	std::string getLowercase(const std::string &str);
@@ -62,10 +59,12 @@ namespace Shared
 	void getLine(std::istream &in, std::string &line, int max_size = 0);
 
 	/* Function to write nullbytes in a file */
-	bool eraseContent(std::ofstream &outFile, uint64_t pos, uint64_t size);
+	bool eraseContent(std::ofstream &outFile, uint64_t pos, uint64_t size); // no safer
+	bool eraseContent(std::ofstream &outFile, uint64_t pos, uint64_t size, char *&content);
 
 	/* Function to copy content from inFile to outFile */
-	bool writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &outFile, uint64_t outPos, uint64_t size);
+	bool writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &outFile, uint64_t outPos, uint64_t size); // no safer
+	bool writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &outFile, uint64_t outPos, uint64_t size, char *&content);
 
 	/* Function to get string (in KB, MB or GB) from size */
 	std::string getStringSize(const uint64_t &size);

@@ -19,6 +19,9 @@ public:
 
 	uint32_t getNewReservedSpace() const;
 
+private slots:
+	void on_spinBoxNew_valueChanged(int arg1);
+
 private:
 	Ui::ReservedSpaceDialog *ui;
 };

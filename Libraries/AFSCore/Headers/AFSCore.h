@@ -99,6 +99,8 @@ public:
 public:
 	AFS_File(const std::string &afsName);
 
+	AFS_File(const AFS_File& afs);
+
 	~AFS_File();
 
 	Error getError() const;
@@ -127,11 +129,11 @@ public:
 
 	bool commitFileDesc() const;
 
-	bool exportFile(uint32_t index, const std::string &path) const; // TODO -> check if file already exists
+	bool exportFile(uint32_t index, const std::string &path, char *&content) const; // TODO -> check if file already exists
 
 	bool exportAFLCommon(const std::string &path) const; // TODO -> check if file already exists
 
-	uint8_t importFile(uint32_t index, const std::string &path);
+	uint8_t importFile(uint32_t index, const std::string &path, char *&content);
 
 	uint8_t importAFLCommon(const std::string &path);
 
@@ -145,7 +147,7 @@ public:
 
 	void optimize();
 
-	bool rebuild(const std::string &path);
+	bool rebuild(const std::string &path, char *&content);
 
 private:
 	bool openAFS(std::fstream &inFile, const std::ios::openmode &mode) const;

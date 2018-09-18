@@ -5,27 +5,17 @@
 
 static constexpr uint64_t max_size = 1048576 * 128; // 128 mb
 
-bool Shared::fileExists(const std::string &path)
+uint64_t Shared::getFileSize(const std::string &path)
 {
-	std::ifstream in(path, std::ios::in);
-	if (in.is_open()) {
-		in.close();
-		return true;
+	std::ifstream inFile(path, std::ios::in | std::ios::binary);
+	if (inFile.is_open()) {
+		inFile.seekg(0, std::ios::end);
+		auto size = inFile.tellg();
+		inFile.close();
+		return size;
 	}
 	else {
-		return false;
-	}
-}
-
-bool Shared::createFile(const std::string &path)
-{
-	std::ofstream out(path, std::ios::out);
-	if (out.is_open()) {
-		out.close();
-		return true;
-	}
-	else {
-		return false;
+		return 0;
 	}
 }
 
@@ -130,6 +120,14 @@ void Shared::getLine(std::istream &in, std::string &line, int max_size)
 bool Shared::eraseContent(std::ofstream &outFile, uint64_t pos, uint64_t size)
 {
 	char *content = nullptr;
+	return eraseContent(outFile, pos, size, content);
+}
+
+bool Shared::eraseContent(std::ofstream &outFile, uint64_t pos, uint64_t size, char *&content)
+{
+	if (content != nullptr) {
+		free(content);
+	}
 
 	if (size > max_size) {
 		content = (char *)calloc((size_t)max_size, sizeof(char));
@@ -152,6 +150,7 @@ bool Shared::eraseContent(std::ofstream &outFile, uint64_t pos, uint64_t size)
 		}
 
 		free(content);
+		content = nullptr;
 
 		return !outFile.fail();
 	}
@@ -163,6 +162,14 @@ bool Shared::eraseContent(std::ofstream &outFile, uint64_t pos, uint64_t size)
 bool Shared::writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &outFile, uint64_t outPos, uint64_t size)
 {
 	char *content = nullptr;
+	return writeContent(inFile, inPos, outFile, outPos, size, content);
+}
+
+bool Shared::writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &outFile, uint64_t outPos, uint64_t size, char *&content)
+{
+	if (content != nullptr) {
+		free(content);
+	}
 
 	if (size > max_size) {
 		content = (char *)calloc((size_t)max_size, sizeof(char));
@@ -191,6 +198,7 @@ bool Shared::writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &
 		}
 
 		free(content);
+		content = nullptr;
 
 		return !outFile.fail();
 	}
@@ -201,18 +209,20 @@ bool Shared::writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &
 
 std::string Shared::getStringSize(const uint64_t &size)
 {
-	auto new_size = (double)size;
-	uint8_t unit = 0U;
-	while (new_size / 1024.0 >= 1.0 && unit < 3U) {
-		new_size /= 1024.0;
-		++unit;
-	}
-	std::ostringstream sizeStream;
-	sizeStream.precision(2);
-	sizeStream << std::fixed << new_size;
-	return sizeStream.str() + (unit == 0U ? " B" : (unit == 1U ? " KB" : (unit == 2U ? " MB" : " GB")));
-}
+	auto dsize = (double)size;
 
+	int unit;
+
+	for (unit = 0; dsize / 1024 > 1 && unit < 3; ++unit) {
+		dsize /= 1024;
+	}
+
+	std::ostringstream ssize;
+	ssize.precision(2);
+	ssize << std::fixed << dsize;
+
+	return (ssize.str() + (unit == 0 ? " B" : (unit == 1 ? " KB" : (unit == 2 ? " MB" : " GB"))));
+}
 
 #ifdef _WIN32
 

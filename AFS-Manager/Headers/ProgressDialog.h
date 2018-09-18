@@ -20,7 +20,8 @@ public:
 
 private:
 	Ui::ProgressDialog *ui;
-	//char *buffer;
+	char *buffer;
+	Shared::Type type;
 
 public slots:
 	void next();

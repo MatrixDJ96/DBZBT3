@@ -120,33 +120,37 @@ void AFL_File::setOutName(const std::string &outName)
 
 bool AFL_File::Convert() const
 {
-	if (!createFile(outName)) {
-		return false;  // unable to write file
-	}
-
 	auto size = getFileCount();
 
 	std::ofstream outFile;
 	if (isText) {
 		outFile.open(outName, std::ios::out | std::ios::binary);
+		if (outFile.is_open()) {
+			for (auto i : AFL_File::getHeader()) {
+				outFile.write(reinterpret_cast<const char *>(&i), 4); // write AFL header
+			}
 
-		for (auto i : AFL_File::getHeader()) {
-			outFile.write(reinterpret_cast<const char *>(&i), 4); // write AFL header
+			outFile.write(reinterpret_cast<const char *>(&size), 4); // write file count
+
+			for (uint32_t i = 0; i < size; ++i) {
+				char filename[FILENAME_SIZE];
+				strncpy(filename, list[i].c_str(), FILENAME_SIZE);
+				outFile.write(reinterpret_cast<const char *>(&filename), FILENAME_SIZE);
+			}
 		}
-
-		outFile.write(reinterpret_cast<const char *>(&size), 4); // write file count
-
-		for (uint32_t i = 0; i < size; ++i) {
-			char filename[FILENAME_SIZE];
-			strncpy(filename, list[i].c_str(), FILENAME_SIZE);
-			outFile.write(reinterpret_cast<const char *>(&filename), FILENAME_SIZE);
+		else {
+			outFile.setstate(std::ios::failbit);
 		}
 	}
 	else {
 		outFile.open(outName, std::ios::out);
-
-		for (uint32_t i = 0; i < size; ++i) {
-			outFile << list[i].c_str() << std::endl; // write line per line
+		if (outFile.is_open()) {
+			for (uint32_t i = 0; i < size; ++i) {
+				outFile << list[i].c_str() << std::endl; // write line per line
+			}
+		}
+		else {
+			outFile.setstate(std::ios::failbit);
 		}
 	}
 

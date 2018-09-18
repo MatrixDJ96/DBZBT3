@@ -2,10 +2,11 @@
 #include <ui_ProgressDialog.h>
 
 #include <QIcon>
+#include <QDebug>
 
 using namespace Shared;
 
-ProgressDialog::ProgressDialog(Type type, uint32_t max_value, uint32_t init_value, QWidget *parent) : QDialog(parent), ui(new Ui::ProgressDialog)
+ProgressDialog::ProgressDialog(Type type, uint32_t max_value, uint32_t init_value, QWidget *parent) : QDialog(parent), ui(new Ui::ProgressDialog), type(type)
 {
 	setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
@@ -29,23 +30,28 @@ ProgressDialog::ProgressDialog(Type type, uint32_t max_value, uint32_t init_valu
 		ui->pixmap->setPixmap(QPixmap(":/Importer"));
 		setWindowIcon(QIcon(*ui->pixmap->pixmap()));
 		ui->progressBar->setRange(0, 0);
-	} else {
+	}
+	else {
 		setWindowTitle("AFS-Manager");
 		ui->progressBar->setRange(0, 0);
 	}
 
-	/*constexpr int size = 128 * 1024 * 1024;
+	constexpr int size = 64 * 1024 * 1024;
 	buffer = new char[size];
 
 	for (int i = 0; i < size; ++i) {
 		buffer[i] = nullbyte;
-	}*/
+	}
+
+	qDebug() << "Created" << this << "->" << (type == Type::Export ? "export" : (type == Type::Import ? "import" : (type == Type::Rebuild ? "rebuild" : "loading")));
 }
 
 ProgressDialog::~ProgressDialog()
 {
 	delPointer(ui);
-	//delPointerArray(buffer);
+	delPointerArray(buffer);
+
+	qDebug() << "Destroyed" << this << "->" << (type == Type::Export ? "export" : (type == Type::Import ? "import" : (type == Type::Rebuild ? "rebuild" : "loading")));
 }
 
 void ProgressDialog::next()
