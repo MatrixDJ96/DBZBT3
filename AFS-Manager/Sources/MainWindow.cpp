@@ -689,10 +689,15 @@ void MainWindow::errorFile()
 		worker->start();
 	}
 	else {
-		if (reply == QMessageBox::NoToAll) {
-			worker->setSkipAll(true);
+		if (worker->type == Type::Rebuild) {
+			emit done();
 		}
-		emit skipFile();
+		else {
+			if (reply == QMessageBox::NoToAll) {
+				worker->setSkipAll(true);
+			}
+			emit skipFile();
+		}
 	}
 }
 
