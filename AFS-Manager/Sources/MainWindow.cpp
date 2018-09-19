@@ -647,10 +647,7 @@ void MainWindow::abort()
 	QString type = worker->type == Type::Import ? " import " : (worker->type == Type::Export ? " export" : (worker->type == Type::Rebuild ? " rebuild" : ""));
 
 	if (ShowWarning(this, "Abort", "Are you sure that you want to abort" + type + "?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
-		if (oldWorker != nullptr) {
-			oldWorker = nullptr;
-		}
-
+		oldWorker = nullptr;
 		emit done();
 	}
 	else {
@@ -690,6 +687,7 @@ void MainWindow::errorFile()
 	}
 	else {
 		if (worker->type == Type::Rebuild) {
+			oldWorker = nullptr;
 			emit done();
 		}
 		else {

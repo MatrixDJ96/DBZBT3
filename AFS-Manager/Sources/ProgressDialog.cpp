@@ -36,12 +36,12 @@ ProgressDialog::ProgressDialog(Type type, uint32_t max_value, uint32_t init_valu
 		ui->progressBar->setRange(0, 0);
 	}
 
-	constexpr int size = 64 * 1024 * 1024;
+	/*constexpr int size = 64 * 1024 * 1024;
 	buffer = new char[size];
 
 	for (int i = 0; i < size; ++i) {
 		buffer[i] = nullbyte;
-	}
+	}*/
 
 	qDebug() << "Created" << this << "->" << (type == Type::Export ? "export" : (type == Type::Import ? "import" : (type == Type::Rebuild ? "rebuild" : "loading")));
 }
@@ -49,7 +49,7 @@ ProgressDialog::ProgressDialog(Type type, uint32_t max_value, uint32_t init_valu
 ProgressDialog::~ProgressDialog()
 {
 	delPointer(ui);
-	delPointerArray(buffer);
+	//delPointerArray(buffer);
 
 	qDebug() << "Destroyed" << this << "->" << (type == Type::Export ? "export" : (type == Type::Import ? "import" : (type == Type::Rebuild ? "rebuild" : "loading")));
 }

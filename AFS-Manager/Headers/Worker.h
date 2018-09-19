@@ -41,7 +41,7 @@ private:
 	std::map<uint32_t, std::string> list;
 	std::map<uint32_t, std::string>::iterator iter;
 	bool skipAll;
-	char *buffer;
+	//char *buffer;
 	char *content;
 
 public slots:

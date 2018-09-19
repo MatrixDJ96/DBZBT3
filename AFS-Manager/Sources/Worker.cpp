@@ -16,19 +16,19 @@ Worker::Worker(Type type, AFS_File *afs, const std::map<uint32_t, std::string> &
 
 	checkReservedSpace();
 
-	constexpr int size = 64 * 1024 * 1024;
+	/*constexpr int size = 64 * 1024 * 1024;
 	buffer = new char[size];
 
 	for (int i = 0; i < size; ++i) {
 		buffer[i] = nullbyte;
-	}
+	}*/
 
 	qDebug() << "Created" << this << "->" << (type == Type::Export ? "export" : (type == Type::Import ? "import" : (type == Type::Rebuild ? "rebuild" : "loading")));
 }
 
 Worker::~Worker()
 {
-	delPointerArray(buffer);
+	//delPointerArray(buffer);
 
 	if (content != nullptr) {
 		free(content);
