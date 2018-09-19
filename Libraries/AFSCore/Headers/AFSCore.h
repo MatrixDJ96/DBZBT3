@@ -97,7 +97,7 @@ public:
 	};
 
 public:
-	AFS_File(const std::string &afsName);
+	AFS_File(const std::string &afsName); // TODO -> getcwd
 
 	AFS_File(const AFS_File& afs);
 

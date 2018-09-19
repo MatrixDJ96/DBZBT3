@@ -28,9 +28,8 @@ AFS_File::FileDesc::FileDesc() : name(""), year(0), month(0), day(0), hour(0), m
 
 AFS_File::AFS_File(const std::string &afsName) : afsName(backSlashtoSlash(afsName)), afsSize(0), fileCount(0)
 {
-	char str[512];
-	getcwd(str, 512);
-
+	/*char str[512];
+	getcwd(str, 512);*/
 
 	std::fstream inFile;
 	if (!openAFS(inFile, std::ios::in)) {
