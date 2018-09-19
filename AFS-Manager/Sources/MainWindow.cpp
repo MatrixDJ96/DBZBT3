@@ -853,16 +853,18 @@ void MainWindow::on_tableWidget_cellChanged(int row, int column)
 		auto item = ui->tableWidget->item(row, column);
 
 		if (column == columnID::filename) {
-			auto text = item->text();
-			if (text.size() > FILENAME_SIZE) {
-				text.resize(FILENAME_SIZE);
-				enableCellChanged = false;
-				item->setText(text);
-				enableCellChanged = true;
-			}
-			afs->changeFilename(row, text.toLocal8Bit());
-			if (!afs->commitFileDesc()) {
-				ShowError(this, "Error", "Unable to save AFS");
+			if (row < afs->getFileCount()) {
+				auto text = item->text();
+				if (text.size() > FILENAME_SIZE) {
+					text.resize(FILENAME_SIZE);
+					enableCellChanged = false;
+					item->setText(text);
+					enableCellChanged = true;
+				}
+				afs->changeFilename(row, text.toLocal8Bit());
+				if (!afs->commitFileDesc()) {
+					ShowError(this, "Error", "Unable to save AFS");
+				}
 			}
 		}
 	}

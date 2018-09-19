@@ -485,7 +485,7 @@ uint8_t AFS_File::importAFLCommon(const std::string &path)
 
 void AFS_File::changeFilename(uint32_t index, const char *newFilename)
 {
-	if (index > fileCount) {
+	if (index >= fileCount) {
 		throw std::out_of_range(OOF_STRING);
 	}
 
