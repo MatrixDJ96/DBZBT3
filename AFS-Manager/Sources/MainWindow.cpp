@@ -3,6 +3,7 @@
 
 #include <QFileDialog>
 #include <QMimeData>
+#include <QDebug>
 
 #include <algorithm>
 #include <chrono>
@@ -579,7 +580,9 @@ void MainWindow::toAdjust_p1()
 			auto size = getFileSize(item.second);
 			auto rs = afs->getReservedSpace(item.first);
 
-			if (size > rs.first) {
+			qDebug() << "Size:" << size << "| Reserved space:" << rs.first << "| Reserved space (after rebuild):" << rs.second;
+
+			if (size > rs.second) {
 				afs->changeReservedSpace(item.first, afs->getOptimizedReservedSpace(size, AFS_File::Type::Size));
 			}
 		}
