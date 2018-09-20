@@ -12,10 +12,10 @@ ReservedSpaceDialog::ReservedSpaceDialog(uint32_t currentReservedSpace, uint32_t
 	ui->setupUi(this);
 
 	ui->spinBoxCurrent->setValue(currentReservedSpace);
-	ui->spinBoxCurrent->setSuffix((" (" + getStringSize(currentReservedSpace) + ")").c_str());
+	ui->spinBoxCurrent->setSuffix((" (" + getSize(currentReservedSpace) + ")").c_str());
 
 	ui->spinBoxNew->setValue(newReservedSpace);
-	ui->spinBoxNew->setSuffix((" (" + getStringSize(newReservedSpace) + ")").c_str());
+	ui->spinBoxNew->setSuffix((" (" + getSize(newReservedSpace) + ")").c_str());
 }
 
 ReservedSpaceDialog::~ReservedSpaceDialog()
@@ -30,5 +30,5 @@ uint32_t ReservedSpaceDialog::getNewReservedSpace() const
 
 void ReservedSpaceDialog::on_spinBoxNew_valueChanged(int arg1)
 {
-	ui->spinBoxNew->setSuffix((" (" + getStringSize(arg1) + ")").c_str());
+	ui->spinBoxNew->setSuffix((" (" + getSize(arg1) + ")").c_str());
 }

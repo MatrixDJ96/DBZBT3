@@ -66,8 +66,9 @@ namespace Shared
 	bool writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &outFile, uint64_t outPos, uint64_t size); // no safer
 	bool writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &outFile, uint64_t outPos, uint64_t size, char *&content);
 
-	/* Function to get string (in KB, MB or GB) from size */
-	std::string getStringSize(const uint64_t &size);
+	/* Function to get size (in KB, MB or GB)  */
+	std::string getSize(double size);
+	double getSize(const std::string &size);
 
 	/* Function to truncate file size */
 	bool truncateFile(const std::string &path, long size);

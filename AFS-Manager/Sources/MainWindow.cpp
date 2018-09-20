@@ -289,7 +289,7 @@ void MainWindow::drawFileList()
 	// set text information
 	ui->afsName->setText(afs->afsName.c_str());
 	ui->afsFileCount->setText("File count: " + QString::number(fileCount));
-	ui->afsSize->setText(("AFS size: " + getStringSize(afs->getAFSSize())).c_str());
+	ui->afsSize->setText(("AFS size: " + getSize(afs->getAFSSize())).c_str());
 
 #ifdef DBZBT3_DEBUG
 	vfd.emplace_back();
@@ -324,14 +324,14 @@ void MainWindow::drawFileList()
 
 		// size
 		//item = new TableWidgetItem(QString::number(vfi[i].size), TableWidgetItem::Type::Integer);
-		item = new TableWidgetItem(getStringSize(vfi[i].size).c_str(), TableWidgetItem::Type::Integer);
+		item = new TableWidgetItem(getSize(vfi[i].size).c_str(), TableWidgetItem::Type::Integer);
 		populateRowCell(i, columnID::size, item);
 
 		auto hasOverSpace = afs->hasOverSpace(i);
 
 		// reservedSpace
 		//item = new TableWidgetItem(QString::number(vfi[i].reservedSpace), TableWidgetItem::Type::Integer);
-		item = new TableWidgetItem(getStringSize(vfi[i].reservedSpace).c_str(), TableWidgetItem::Type::Integer);
+		item = new TableWidgetItem(getSize(vfi[i].reservedSpace).c_str(), TableWidgetItem::Type::Integer);
 		populateRowCell(i, columnID::reservedSpace, item);
 		if (!hasOverSpace.first) {
 			item->setTextColor(Qt::GlobalColor::green);
@@ -339,7 +339,7 @@ void MainWindow::drawFileList()
 
 		// afterRebuild
 		//item = new TableWidgetItem(QString::number(vfi[i].reservedSpaceRebuild), TableWidgetItem::Type::Integer);
-		item = new TableWidgetItem(getStringSize(vfi[i].reservedSpaceRebuild).c_str(), TableWidgetItem::Type::Integer);
+		item = new TableWidgetItem(getSize(vfi[i].reservedSpaceRebuild).c_str(), TableWidgetItem::Type::Integer);
 		populateRowCell(i, columnID::afterRebuild, item);
 		if (!hasOverSpace.second) {
 			item->setTextColor(Qt::GlobalColor::green);
@@ -659,7 +659,7 @@ void MainWindow::updateFreeSpaceLabel()
 		}
 	}
 
-	ui->freeSpace->setText(("Free space: " + getStringSize(freeSpace) + " (" + getStringSize(freeSpaceRebuild) + ")").c_str());
+	ui->freeSpace->setText(("Free space: " + getSize(freeSpace) + " (" + getSize(freeSpaceRebuild) + ")").c_str());
 }
 
 void MainWindow::abort()
@@ -751,14 +751,14 @@ void MainWindow::refreshRow(uint32_t index)
 		// size
 		auto item = ui->tableWidget->item(row, columnID::size);
 		//item->setText(QString::number(fileInfo.size));
-		item->setText(getStringSize(fileInfo.size).c_str());
+		item->setText(getSize(fileInfo.size).c_str());
 
 		auto hasOverSpace = afs->hasOverSpace(index);
 
 		// reservedSpace
 		item = ui->tableWidget->item(row, columnID::reservedSpace);
 		//item->setText(QString::number(fileInfo.reservedSpace));
-		item->setText(getStringSize(fileInfo.reservedSpace).c_str());
+		item->setText(getSize(fileInfo.reservedSpace).c_str());
 		if (!hasOverSpace.first) {
 			item->setTextColor(Qt::GlobalColor::green);
 		}
@@ -774,7 +774,7 @@ void MainWindow::refreshRow(uint32_t index)
 		// afterRebuild
 		item = ui->tableWidget->item(row, columnID::afterRebuild);
 		//item->setText(QString::number(fileInfo.reservedSpaceRebuild));
-		item->setText(getStringSize(fileInfo.reservedSpaceRebuild).c_str());
+		item->setText(getSize(fileInfo.reservedSpaceRebuild).c_str());
 		if (!hasOverSpace.second) {
 			item->setTextColor(Qt::GlobalColor::green);
 		}

@@ -207,21 +207,40 @@ bool Shared::writeContent(std::ifstream &inFile, uint64_t inPos, std::ofstream &
 	}
 }
 
-std::string Shared::getStringSize(const uint64_t &size)
+std::string Shared::getSize(double dsize)
 {
-	auto dsize = (double)size;
-
-	int unit;
-
-	for (unit = 0; dsize / 1024 > 1 && unit < 3; ++unit) {
+	int unit = 0;
+	for (; dsize / 1024 > 1 && unit < 3; ++unit) {
 		dsize /= 1024;
 	}
 
-	std::ostringstream ssize;
-	ssize.precision(2);
-	ssize << std::fixed << dsize;
+	std::ostringstream ossize;
+	ossize.precision(2);
+	ossize << std::fixed << dsize;
 
-	return (ssize.str() + (unit == 0 ? " B" : (unit == 1 ? " KB" : (unit == 2 ? " MB" : " GB"))));
+	return (ossize.str() + (unit == 0 ? " B" : (unit == 1 ? " KB" : (unit == 2 ? " MB" : " GB"))));
+}
+
+double Shared::getSize(const std::string &ssize)
+{
+	std::string::size_type pos;
+	double size = std::stod(ssize, &pos);
+
+	if (pos + 1 < ssize.size()) {
+		auto substr = ssize.substr(pos + 1);
+		switch (substr[0]) {
+			case 'G':
+				size *= 1024;
+			case 'M':
+				size *= 1024;
+			case 'K':
+				size *= 1024;
+			default:
+				break;
+		}
+	}
+
+	return size;
 }
 
 #ifdef _WIN32
