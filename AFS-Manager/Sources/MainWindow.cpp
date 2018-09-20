@@ -572,10 +572,7 @@ void MainWindow::on_actionRebuild_triggered()
 
 void MainWindow::on_actionAbout_triggered()
 {
-	//AboutDialog(windowTitle(), this).exec();
-	//ProgressDialog(Type::Rebuild, 0, 0, this).exec();
-	ProgressDialog pd(Type::Rebuild, 0, 0, this);
-	pd.exec();
+	AboutDialog(windowTitle(), this).exec();
 }
 // ---------- end menu bar ----------
 
