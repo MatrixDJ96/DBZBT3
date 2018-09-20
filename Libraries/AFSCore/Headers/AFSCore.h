@@ -3,32 +3,6 @@
 
 #include <AFLCore.h>
 
-/*struct CacheElement
-{
-	CacheElement(const uint32_t reservedSpace_) : reservedSpace(reservedSpace_)
-	{
-	}
-
-	CacheElement()
-	{
-	}
-
-	uint32_t reservedSpace;
-};
-
-struct AvailableSpaces
-{
-	AvailableSpaces() : before(0), after(0)
-	{
-	}
-
-	AvailableSpaces(const uint32_t before_, const uint32_t after_) : before(before_), after(after_)
-	{
-	}
-
-	uint32_t before, after;
-};*/
-
 class AFS_File
 {
 private:

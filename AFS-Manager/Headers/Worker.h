@@ -56,9 +56,11 @@ signals:
 
 	void errorFile();
 
+	void errorMessage(const std::string& message);
+
 	void next();
 
-	void rebuilded(const std::string& path);
+	void rebuilded(std::string path);
 
 	void refreshRow(uint32_t index);
 

@@ -58,13 +58,15 @@ public slots:
 private slots:
 	void toAdjust_p1();
 
-	void toAdjust_p2(const std::string &path);
+	void toAdjust_p2(std::string path);
 
 	void updateFreeSpaceLabel();
 
 	void abort();
 
 	void errorFile();
+
+	void errorMessage(const std::string& message);
 
 	void refreshRow(uint32_t index);
 

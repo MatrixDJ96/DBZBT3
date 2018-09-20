@@ -403,7 +403,11 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path, char *&con
 	// 1 -> success;
 	// 2 -> to resize.
 
+#ifdef DBZBT3_DEBUG
+	if (index > fileCount) {
+#else
 	if (index >= fileCount) {
+#endif
 		throw std::out_of_range(OOF_STRING);
 	}
 
@@ -434,19 +438,22 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path, char *&con
 		/* Import new file inside AFS */
 		writeContent(inFile, 0, (std::ofstream &)outFile, fileInfo[index].address, size, content);
 
-		/* Set new file size */
+		/* Update fileInfo */
 		fileInfo[index].size = size;
-		fileDesc[index].size = size;
 
 		auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		auto lt = localtime(&now);
 
-		fileDesc[index].year = lt->tm_year + 1900;
-		fileDesc[index].month = lt->tm_mon + 1;
-		fileDesc[index].day = lt->tm_mday;
-		fileDesc[index].hour = lt->tm_hour;
-		fileDesc[index].min = lt->tm_min;
-		fileDesc[index].sec = lt->tm_sec;
+		if (index < fileCount) {
+			/* Update fileDesc */
+			fileDesc[index].year = lt->tm_year + 1900;
+			fileDesc[index].month = lt->tm_mon + 1;
+			fileDesc[index].day = lt->tm_mday;
+			fileDesc[index].hour = lt->tm_hour;
+			fileDesc[index].min = lt->tm_min;
+			fileDesc[index].sec = lt->tm_sec;
+			fileDesc[index].size = size;
+		}
 
 		commitFileInfo() && commitFileDesc();
 

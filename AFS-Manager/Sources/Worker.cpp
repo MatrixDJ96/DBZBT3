@@ -90,29 +90,33 @@ bool Worker::work(uint32_t index, const std::string &path)
 
 	qDebug() << "content is" << (content != nullptr ? "working" : "free");
 
-	if (!isInterruptionRequested()) {
-		if (type == Type::Export) {
-			emit progressText(QString::fromLocal8Bit(("Exporting '" + filename + "'...").c_str()));
-			result = afs->exportFile(index, path, content);
-		}
-		else if (type == Type::Import) {
-			emit progressText(QString::fromLocal8Bit(("Importing '" + getFileBasename(path) + "' over '" + filename + "'...").c_str()));
-			result = afs->importFile(index, path, content);
-		}
-		else if (type == Type::Rebuild) {
-			emit progressText(QString::fromLocal8Bit(("Rebuilding '" + getFileBasename(afs->afsName) + "' to '" + getFileBasename(path) + "'...").c_str()));
-			result = afs->rebuild(path, content);
-		}
+	try {
+		if (!isInterruptionRequested()) {
+			if (type == Type::Export) {
+				emit progressText(QString::fromLocal8Bit(("Exporting '" + filename + "'...").c_str()));
+				result = afs->exportFile(index, path, content);
+			}
+			else if (type == Type::Import) {
+				emit progressText(QString::fromLocal8Bit(("Importing '" + getFileBasename(path) + "' over '" + filename + "'...").c_str()));
+				result = afs->importFile(index, path, content);
+			}
+			else if (type == Type::Rebuild) {
+				emit progressText(QString::fromLocal8Bit(("Rebuilding '" + getFileBasename(afs->afsName) + "' to '" + getFileBasename(path) + "'...").c_str()));
+				result = afs->rebuild(path, content);
+			}
 
-		if (result == 1 || skipAll) {
-			emit next();
-			if (type == Type::Import) {
-				emit refreshRow(index);
+			if (result == 1 || skipAll) {
+				emit next();
+				if (type == Type::Import) {
+					emit refreshRow(index);
+				}
+			}
+			else {
+				emit errorFile();
 			}
 		}
-		else {
-			emit errorFile();
-		}
+	} catch (std::out_of_range) {
+		emit errorMessage(std::string("Unable to ") + (type == Type::Import ? "import" : "export") + " '" + path + "'\n(out_of_range exception)");
 	}
 
 	return result || skipAll;

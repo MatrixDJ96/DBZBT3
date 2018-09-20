@@ -180,7 +180,18 @@ void MainWindow::dragMoveEvent(QDragMoveEvent *event)
 	ui->tableWidget->clearSelection();
 
 	if (row != -1 && column != -1) {
-		QTableWidgetSelectionRange range(row, 0, row + event->mimeData()->urls().size() - 1, ui->tableWidget->columnCount() - 1);
+		auto tot = row + event->mimeData()->urls().size() - 1;
+		auto max = ui->tableWidget->rowCount() - 1;
+
+		qDebug() << "row:" << row << "| mimeSize:" << event->mimeData()->urls().size() << "| max:" << max << "| tot:" << tot;
+
+		if (tot > max) {
+			tot = max;
+		}
+
+		qDebug() << "row:" << row << "| mimeSize:" << event->mimeData()->urls().size() << "| max:" << max << "| tot:" << tot;
+
+		QTableWidgetSelectionRange range(row, 0, tot, ui->tableWidget->columnCount() - 1);
 		ui->tableWidget->setRangeSelected(range, true);
 	}
 
@@ -216,15 +227,18 @@ void MainWindow::dropEvent(QDropEvent *event)
 			std::string path;
 
 			for (uint32_t i = 0; i < size; ++i) {
-				path = urls[i].path().toLocal8Bit().toStdString();
+				try {
+					path = urls[i].path().toLocal8Bit().toStdString();
 
 #ifdef _WIN32
-				if (path[0] == '/') {
-					path = path.substr(1, path.size());
-				}
+					if (path[0] == '/') {
+						path = path.substr(1, path.size());
+					}
 #endif
-
-				list.insert({getIndexFromRow(row + i), path});
+					list.insert({getIndexFromRow(row + i), path});
+				} catch (...) {
+					// just skip invalid row
+				}
 			}
 
 			startWorker(Type::Import, list);
@@ -350,7 +364,13 @@ void MainWindow::drawFileList()
 
 uint32_t MainWindow::getIndexFromRow(int row) const
 {
-	return (ui->tableWidget->item(row, columnID::number)->text().toUInt() - 1);
+	auto item = ui->tableWidget->item(row, columnID::number);
+
+	if (item != nullptr) {
+		return (item->text().toUInt() - 1);
+	}
+
+	throw std::exception();
 }
 
 std::vector<uint32_t> MainWindow::getSelectedIndexes() const
@@ -394,6 +414,7 @@ void MainWindow::startWorker(Type type, const std::map<uint32_t, std::string> &l
 
 	if (type != Type::Rebuild) {
 		connect(worker, &Worker::next, progressDialog, &ProgressDialog::next); // updated bar on progress
+		connect(worker, &Worker::errorMessage, this, &MainWindow::errorMessage); // catch exceptions
 
 		if (type == Type::Import) {
 			connect(worker, &Worker::toAdjust, this, &MainWindow::toAdjust_p1); // ask to rebuild
@@ -551,7 +572,10 @@ void MainWindow::on_actionRebuild_triggered()
 
 void MainWindow::on_actionAbout_triggered()
 {
-	AboutDialog(windowTitle(), this).exec();
+	//AboutDialog(windowTitle(), this).exec();
+	//ProgressDialog(Type::Rebuild, 0, 0, this).exec();
+	ProgressDialog pd(Type::Rebuild, 0, 0, this);
+	pd.exec();
 }
 // ---------- end menu bar ----------
 
@@ -602,7 +626,7 @@ void MainWindow::toAdjust_p1()
 	}
 }
 
-void MainWindow::toAdjust_p2(const std::string &path)
+void MainWindow::toAdjust_p2(std::string path)
 {
 	if (oldWorker != nullptr) {
 		auto *afs = this->afs;
@@ -702,6 +726,12 @@ void MainWindow::errorFile()
 	}
 }
 
+void MainWindow::errorMessage(const std::string &message)
+{
+	ShowError(this, "Error", QString::fromLocal8Bit(message.c_str()));
+	emit skipFile();
+}
+
 void MainWindow::refreshRow(uint32_t index)
 {
 	auto list = ui->tableWidget->findItems(QString::number(index + 1), Qt::MatchExactly);
@@ -715,9 +745,11 @@ void MainWindow::refreshRow(uint32_t index)
 		}
 	}
 
-	if (row != -1) {
+	auto fileCount = afs->getFileCount();
+
+	if (row != -1 && row != fileCount) {
 		auto fileInfo = afs->getFileInfo(index);
-		auto fileDesc = (index != afs->getFileCount() ? afs->getFileDesc(index) : AFS_File::FileDesc());
+		auto fileDesc = (index != fileCount ? afs->getFileDesc(index) : AFS_File::FileDesc());
 
 		// size
 		auto item = ui->tableWidget->item(row, columnID::size);
@@ -761,6 +793,9 @@ void MainWindow::refreshRow(uint32_t index)
 		// date
 		item = ui->tableWidget->item(row, columnID::dateModified);
 		item->setText(QString::number(fileDesc.day).rightJustified(2, '0') + "-" + QString::number(fileDesc.month).rightJustified(2, '0') + "-" + QString::number(fileDesc.year).rightJustified(4, '0') + " " + QString::number(fileDesc.hour).rightJustified(2, '0') + ":" + QString::number(fileDesc.min).rightJustified(2, '0') + ":" + QString::number(fileDesc.sec).rightJustified(2, '0'));
+	}
+	else if (row == fileCount) {
+		openAFS(afs->afsName);
 	}
 }
 
