@@ -53,6 +53,8 @@ void MainWindow::openAFS(const std::string &path, bool firstCall)
 	auto *afs = new AFS_File(path);
 	auto error = afs->getError();
 
+	qDebug() << afs->afsName.c_str();
+
 	if (error.badStream || error.invalidAddress || error.notAFS || error.unableToOpen) {
 		delPointer(afs);
 		if (error.badStream) {
@@ -73,6 +75,8 @@ void MainWindow::openAFS(const std::string &path, bool firstCall)
 	}
 
 	if (error.coherency || error.invalidDesc || error.overSize) {
+		qDebug() << "error.coherency" << error.coherency << "| error.invalidDesc" << error.invalidDesc << "| error.overSize" << error.overSize;
+
 		if (!firstCall || ShowWarning(this, "Error", "This AFS needs to be fixed\nDo you want to do it?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
 			bool result = false;
 
@@ -183,13 +187,9 @@ void MainWindow::dragMoveEvent(QDragMoveEvent *event)
 		auto tot = row + event->mimeData()->urls().size() - 1;
 		auto max = ui->tableWidget->rowCount() - 1;
 
-		qDebug() << "row:" << row << "| mimeSize:" << event->mimeData()->urls().size() << "| max:" << max << "| tot:" << tot;
-
 		if (tot > max) {
 			tot = max;
 		}
-
-		qDebug() << "row:" << row << "| mimeSize:" << event->mimeData()->urls().size() << "| max:" << max << "| tot:" << tot;
 
 		QTableWidgetSelectionRange range(row, 0, tot, ui->tableWidget->columnCount() - 1);
 		ui->tableWidget->setRangeSelected(range, true);
@@ -260,13 +260,13 @@ void MainWindow::adjustColumns()
 	/*ui->tableWidget->horizontalHeader()->setResizeContentsPrecision(-1);
 	ui->tableWidget->resizeColumnsToContents();*/
 
-	ui->tableWidget->setColumnWidth(columnID::number, ui->tableWidget->columnWidth(columnID::number) + 15);
-	ui->tableWidget->setColumnWidth(columnID::filename, ui->tableWidget->columnWidth(columnID::filename) + 60);
-	ui->tableWidget->setColumnWidth(columnID::size, ui->tableWidget->columnWidth(columnID::size) + 26);
-	ui->tableWidget->setColumnWidth(columnID::reservedSpace, ui->tableWidget->columnWidth(columnID::reservedSpace) + 27);
-	ui->tableWidget->setColumnWidth(columnID::afterRebuild, ui->tableWidget->columnWidth(columnID::afterRebuild) + 27);
+	ui->tableWidget->setColumnWidth(columnID::number, ui->tableWidget->columnWidth(columnID::number) + 30);
+	ui->tableWidget->setColumnWidth(columnID::filename, ui->tableWidget->columnWidth(columnID::filename) + 100);
+	ui->tableWidget->setColumnWidth(columnID::size, ui->tableWidget->columnWidth(columnID::size) + 35);
+	ui->tableWidget->setColumnWidth(columnID::reservedSpace, ui->tableWidget->columnWidth(columnID::reservedSpace) + 35);
+	ui->tableWidget->setColumnWidth(columnID::afterRebuild, ui->tableWidget->columnWidth(columnID::afterRebuild) + 35);
 	ui->tableWidget->setColumnWidth(columnID::dateModified, ui->tableWidget->columnWidth(columnID::dateModified) + 40);
-	ui->tableWidget->setColumnWidth(columnID::address, ui->tableWidget->columnWidth(columnID::address) + 20);
+	ui->tableWidget->setColumnWidth(columnID::address, ui->tableWidget->columnWidth(columnID::address) + 35);
 }
 
 void MainWindow::drawFileList()
@@ -517,7 +517,7 @@ void MainWindow::on_actionExportAFLCommon_triggered()
 		return; // prevent possible future errors
 	}
 
-	std::string path = QFileDialog::getSaveFileName(this, "Save AFL file", getFilename(afs->afsName).c_str(), "AFL file (*.afl)").toLocal8Bit().toStdString();
+	std::string path = QFileDialog::getSaveFileName(this, "Save AFL file", QString::fromLocal8Bit(getFilename(afs->afsName).c_str()), "AFL file (*.afl)").toLocal8Bit().toStdString();
 	if (path.empty()) {
 		return;
 	}
@@ -577,49 +577,70 @@ void MainWindow::on_actionAbout_triggered()
 // ---------- end menu bar ----------
 
 // ---------- various slots ----------
-void MainWindow::toAdjust_p1()
+void MainWindow::toAdjust_p1(bool init)
 {
 	auto worker = (Worker *)QObject::sender();
 
 	worker->wait();
 
-	auto index = worker->getPosition();
-	auto errors = worker->getErrors();
+	auto result = worker->getStatusRS();
 
-	auto buttons = QMessageBox::Yes | QMessageBox::No;
+	// check if there is a problem
+	if (result != 0) {
+		auto index = worker->getPosition();
+		auto buttons = QMessageBox::Yes | QMessageBox::No;
 
-	if (errors > 2) {
-		buttons |= QMessageBox::NoToAll;
-	}
+		QMessageBox::StandardButton reply = QMessageBox::NoButton;
 
-	auto reply = ShowError(this, "Error", "Not enought space to import over '" + QString::fromLocal8Bit(afs->getFilename(index).c_str()) + "'...\nDo you to want to auto-adjust reserved space?", buttons);
+		if (init) {
+			reply = ShowInfo(this, "Optimize", "Do you want to optimize reserved space (require rebuild)?", buttons);
+		}
+		else {
+			auto errors = worker->getErrors();
 
-	if (reply == QMessageBox::Yes) {
-		auto *afs = new AFS_File(*this->afs);
+			if (errors > 2) {
+				buttons |= QMessageBox::NoToAll;
+			}
 
-		for (auto item : worker->getList()) {
-			auto size = getFileSize(item.second);
-			auto rs = afs->getReservedSpace(item.first);
+			reply = ShowError(this, "Error", "Not enought space to import over '" + QString::fromLocal8Bit(afs->getFilename(index).c_str()) + "'...\nDo you to want to auto-adjust reserved space?", buttons);
+		}
 
-			qDebug() << "Size:" << size << "| Reserved space:" << rs.first << "| Reserved space (after rebuild):" << rs.second;
+		if (reply == QMessageBox::Yes) {
+			auto *afs = new AFS_File(*this->afs);
 
-			if (size > rs.second) {
-				afs->changeReservedSpace(item.first, afs->getOptimizedReservedSpace(size, AFS_File::Type::Size));
+			auto list = worker->getList();
+			for (auto iter = list.find(index); iter != list.end(); iter++) {
+				auto size = getFileSize(iter->second);
+
+				auto rs = afs->getReservedSpace(iter->first);
+				auto ors = afs->getOptimizedReservedSpace(size, AFS_File::Type::Size);
+
+				qDebug() << "Size:" << size << "| Reserved space:" << rs.first << "| Reserved space (after rebuild):" << rs.second;
+
+				if (size > rs.second || (result & 2 && rs.first > ors)) {
+					afs->changeReservedSpace(iter->first, ors);
+				}
+			}
+
+			oldWorker = worker; // the magic
+
+			if (!rebuildAFS(afs)) {
+				oldWorker = nullptr;
+				emit done();
 			}
 		}
-
-		oldWorker = worker; // the magic
-
-		if (!rebuildAFS(afs)) {
-			oldWorker = nullptr;
-			emit done();
+		else {
+			if (result & 2) {
+				worker->removeStatusRS(2);
+				worker->start();
+			}
+			else {
+				if (reply == QMessageBox::NoToAll) {
+					worker->setSkipAll(true);
+				}
+				worker->skipFile();
+			}
 		}
-	}
-	else {
-		if (reply == QMessageBox::NoToAll) {
-			worker->setSkipAll(true);
-		}
-		worker->skipFile();
 	}
 }
 
@@ -744,7 +765,10 @@ void MainWindow::refreshRow(uint32_t index)
 
 	auto fileCount = afs->getFileCount();
 
-	if (row != -1 && row != fileCount) {
+	if (getIndexFromRow(row) == fileCount) {
+		openAFS(afs->afsName);
+	}
+	else if (row != -1) {
 		auto fileInfo = afs->getFileInfo(index);
 		auto fileDesc = (index != fileCount ? afs->getFileDesc(index) : AFS_File::FileDesc());
 
@@ -790,9 +814,6 @@ void MainWindow::refreshRow(uint32_t index)
 		// date
 		item = ui->tableWidget->item(row, columnID::dateModified);
 		item->setText(QString::number(fileDesc.day).rightJustified(2, '0') + "-" + QString::number(fileDesc.month).rightJustified(2, '0') + "-" + QString::number(fileDesc.year).rightJustified(4, '0') + " " + QString::number(fileDesc.hour).rightJustified(2, '0') + ":" + QString::number(fileDesc.min).rightJustified(2, '0') + ":" + QString::number(fileDesc.sec).rightJustified(2, '0'));
-	}
-	else if (row == fileCount) {
-		openAFS(afs->afsName);
 	}
 }
 
@@ -876,7 +897,6 @@ void MainWindow::on_actionModifyReservedSpace_triggered()
 			}
 		}
 	}
-
 }
 
 void MainWindow::on_tableWidget_cellChanged(int row, int column)
@@ -893,7 +913,7 @@ void MainWindow::on_tableWidget_cellChanged(int row, int column)
 					item->setText(text);
 					enableCellChanged = true;
 				}
-				afs->changeFilename(row, text.toLocal8Bit());
+				afs->changeFilename(row, text.toLocal8Bit().toStdString().c_str());
 				if (!afs->commitFileDesc()) {
 					ShowError(this, "Error", "Unable to save AFS");
 				}

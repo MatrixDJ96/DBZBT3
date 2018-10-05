@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>AboutDialog</class>
  <widget class="QDialog" name="AboutDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>718</width>
+    <height>404</height>
+   </rect>
+  </property>
   <property name="sizePolicy">
    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
     <horstretch>0</horstretch>
@@ -12,7 +20,7 @@
    <string>About</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../Libraries/Shared/Resources/MessageBox.qrc">
+   <iconset resource="../../Libraries/MessageBox/Resources/MessageBox.qrc">
     <normaloff>:/Info</normaloff>:/Info</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -103,8 +111,8 @@ p, li { white-space: pre-wrap; }
   </layout>
  </widget>
  <resources>
-  <include location="../../Libraries/Shared/Resources/MessageBox.qrc"/>
   <include location="../Resources/MainWindow.qrc"/>
+  <include location="../../Libraries/MessageBox/Resources/MessageBox.qrc"/>
  </resources>
  <connections/>
 </ui>

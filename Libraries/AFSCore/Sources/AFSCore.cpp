@@ -2,11 +2,7 @@
 
 #include <chrono>
 #include <cstring>
-#include <direct.h>
 #include <sstream>
-
-#include <QString>
-#include <MessageBox.h>
 
 using namespace Shared;
 
@@ -26,12 +22,10 @@ AFS_File::FileDesc::FileDesc() : name(""), year(0), month(0), day(0), hour(0), m
 {
 }
 
-AFS_File::AFS_File(const std::string &afsName) : afsName(backSlashtoSlash(afsName)), afsSize(0), fileCount(0)
+AFS_File::AFS_File(const std::string &afsName) : afsName(getFullPath(afsName)), afsSize(0), fileCount(0)
 {
-	/*char str[512];
-	getcwd(str, 512);*/
-
 	std::fstream inFile;
+
 	if (!openAFS(inFile, std::ios::in)) {
 		error.unableToOpen = true; // could not open afs
 		return;
@@ -47,7 +41,6 @@ AFS_File::AFS_File(const std::string &afsName) : afsName(backSlashtoSlash(afsNam
 
 	inFile.read(reinterpret_cast<char *>(&fileCount), 4); // get fileCount
 	if (fileCount == 0) {
-		// TODO -> create emptyAFS error
 		inFile.close();
 		error.notAFS = true; // this is an empty afs (?)
 		return;
@@ -81,7 +74,7 @@ AFS_File::AFS_File(const std::string &afsName) : afsName(backSlashtoSlash(afsNam
 
 	if (!loadFileDesc(inFile, true)) {
 		inFile.close();
-		if (!error.invalidAddress && !error.invalidDesc) {
+		if (!(error.invalidAddress || error.invalidDesc)) {
 			error.badStream = true;
 		}
 		return; // descriptor error
@@ -105,7 +98,6 @@ AFS_File::AFS_File(const std::string &afsName) : afsName(backSlashtoSlash(afsNam
 		fileInfo[fileCount].reservedSpace = afsSize - fileInfo[fileCount].address;
 		fileInfo[fileCount].reservedSpaceRebuild = getOptimizedReservedSpace(fileCount);
 	}
-
 
 	inFile.close();
 }
@@ -360,6 +352,10 @@ bool AFS_File::exportFile(uint32_t index, const std::string &path, char *&conten
 		return false;
 	}
 
+	if (getFullPath(path) == afsName) {
+		return false; // same file??
+	}
+
 	std::ofstream outFile(path, std::ios::out | std::ios::binary);
 	if (!outFile.is_open()) {
 		inFile.close();
@@ -376,6 +372,10 @@ bool AFS_File::exportFile(uint32_t index, const std::string &path, char *&conten
 
 bool AFS_File::exportAFLCommon(const std::string &path) const
 {
+	if (getFullPath(path) == afsName) {
+		return false; // same file??
+	}
+
 	std::ofstream outFile(path, std::ios::out | std::ios::binary);
 	if (!outFile.is_open()) {
 		return false; // unable to write file;
@@ -406,7 +406,7 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path, char *&con
 #ifdef DBZBT3_DEBUG
 	if (index > fileCount) {
 #else
-	if (index >= fileCount) {
+		if (index >= fileCount) {
 #endif
 		throw std::out_of_range(OOF_STRING);
 	}
@@ -414,6 +414,10 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path, char *&con
 	std::fstream outFile;
 	if (!openAFS(outFile, std::ios::in | std::ios::out)) {
 		return 0;
+	}
+
+	if (getFullPath(path) == afsName) {
+		return 0; // same file??
 	}
 
 	std::ifstream inFile(path, std::ios::in | std::ios::binary);
@@ -441,11 +445,13 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path, char *&con
 		/* Update fileInfo */
 		fileInfo[index].size = size;
 
-		auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		auto lt = localtime(&now);
+		commitFileInfo();
 
 		if (index < fileCount) {
 			/* Update fileDesc */
+			auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+			auto lt = localtime(&now);
+
 			fileDesc[index].year = lt->tm_year + 1900;
 			fileDesc[index].month = lt->tm_mon + 1;
 			fileDesc[index].day = lt->tm_mday;
@@ -453,9 +459,9 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path, char *&con
 			fileDesc[index].min = lt->tm_min;
 			fileDesc[index].sec = lt->tm_sec;
 			fileDesc[index].size = size;
-		}
 
-		commitFileInfo() && commitFileDesc();
+			commitFileDesc();
+		}
 
 		inFile.close();
 		outFile.close();
@@ -471,9 +477,13 @@ uint8_t AFS_File::importAFLCommon(const std::string &path)
 	// 1 -> success;
 	// 2 -> incompatible afl.
 
-	if (!(std::ifstream(path).is_open())) {
+
+	std::ifstream inFile(path);
+	if (!(inFile.is_open())) {
 		return 0;  // unable to read file
 	}
+	inFile.close();
+
 
 	AFL_File afl(path);
 
@@ -523,7 +533,7 @@ bool AFS_File::fixInvalidDesc()
 	uint32_t descRealSize = getOptimizedReservedSpace(fileCount);
 	fileInfo[fileCount].address = (fileInfo[fileCount - 1].size != 0 ? (fileInfo[fileCount - 1].address + (fileInfo[fileCount - 1].size / 2048) * 2048 + 2048) : fileInfo[fileCount - 1].address);
 
-	bool result = eraseContent((std::ofstream &)outFile, (afsSize < fileInfo[fileCount].address ? afsSize : fileInfo[fileCount].address), (afsSize < fileInfo[fileCount].address ? fileInfo[fileCount].address - afsSize : 0) + descRealSize);
+	bool result = eraseContent((std::ofstream &)outFile, fileInfo[fileCount].address, descRealSize);
 
 	if (result) {
 		outFile.seekp(sizeof(FileInfo) * (fileCount + 1));
@@ -542,7 +552,11 @@ bool AFS_File::fixInvalidDesc()
 bool AFS_File::fixOverSize()
 {
 	if (afsSize % 2048 != 0) {
-		return truncateFile(afsName, (afsSize / 2048) * 2048);
+		afsSize = (afsSize / 2048) * 2048;
+		fileInfo[fileCount].reservedSpace = afsSize - fileInfo[fileCount].address;
+		fileInfo[fileCount].reservedSpaceRebuild = getOptimizedReservedSpace(fileCount);
+
+		return truncateFile(afsName, afsSize);
 	}
 	else {
 		return true;
@@ -558,8 +572,8 @@ void AFS_File::optimize()
 
 bool AFS_File::rebuild(const std::string &path, char *&content)
 {
-	if (afsName == path) {
-		return false;
+	if (getFullPath(path) == afsName) {
+		return false; // same file??
 	}
 
 	auto header = AFS_File::getHeader();

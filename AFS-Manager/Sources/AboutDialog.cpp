@@ -11,9 +11,7 @@ AboutDialog::AboutDialog(const QString &title, QWidget *parent) : QDialog(parent
 
 	ui->setupUi(this);
 
-	auto text = ui->about->text();
-	text.replace("${TITLE}", title);
-	ui->about->setText(text);
+	ui->about->setText(ui->about->text().replace("${TITLE}", title));
 }
 
 AboutDialog::~AboutDialog()

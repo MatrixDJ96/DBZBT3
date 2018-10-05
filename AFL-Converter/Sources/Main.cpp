@@ -8,6 +8,18 @@
 using namespace Shared;
 using Reply = QMessageBox::StandardButton;
 
+bool fileExists(std::string &path)
+{
+	std::ifstream inFile(path);
+	if (inFile.is_open()) {
+		inFile.close();
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
@@ -32,7 +44,7 @@ int main(int argc, char *argv[])
 			bool overwrite = false;
 			std::string outName = afl.getOutName();
 			if (fileExists(outName)) {
-				Reply reply =  ShowWarning(nullptr, title.c_str(), ("Do you want to overwrite '" + getFileBasename(outName) + "'?").c_str(), QMessageBox::Yes | QMessageBox::No);
+				Reply reply = ShowWarning(nullptr, title.c_str(), ("Do you want to overwrite '" + getFileBasename(outName) + "'?").c_str(), QMessageBox::Yes | QMessageBox::No);
 				if (reply == QMessageBox::Yes) {
 					overwrite = true;
 				}

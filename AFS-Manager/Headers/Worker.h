@@ -17,11 +17,15 @@ public:
 
 	uint32_t getPosition() const;
 
-	bool checkReservedSpace();
+	uint8_t getStatusRS() const;
+
+	uint8_t checkReservedSpace();
 
 	std::map<uint32_t, std::string> getList() const;
 
 	void setSkipAll(bool flag);
+
+	void removeStatusRS(uint8_t flag);
 
 	void updateAFS(AFS_File *afs);
 
@@ -36,13 +40,13 @@ public:
 
 private:
 	AFS_File *afs;
+	//char *buffer;
+	char *content;
 	int errors;
-	bool isValid;
 	std::map<uint32_t, std::string> list;
 	std::map<uint32_t, std::string>::iterator iter;
 	bool skipAll;
-	//char *buffer;
-	char *content;
+	uint8_t status;
 
 public slots:
 	void skipFile();
@@ -50,13 +54,14 @@ public slots:
 	void terminate();
 
 signals:
+
 	void abort();
 
 	void done();
 
 	void errorFile();
 
-	void errorMessage(const std::string& message);
+	void errorMessage(const std::string &message);
 
 	void next();
 
@@ -64,7 +69,7 @@ signals:
 
 	void refreshRow(uint32_t index);
 
-	void toAdjust();
+	void toAdjust(bool init);
 
 	void progressText(const QString &text);
 };

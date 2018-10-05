@@ -10,7 +10,7 @@ TableWidgetItem::TableWidgetItem(const QString &text, TableWidgetItem::Type type
 bool TableWidgetItem::operator<(const QTableWidgetItem &other) const
 {
 	if (type == Type::Integer) {
-		return getSize(text().toStdString()) < getSize(other.text().toStdString());
+		return getSize(text().toLocal8Bit().toStdString()) < getSize(other.text().toLocal8Bit().toStdString());
 	}
 	else {
 		return QTableWidgetItem::operator<(other);

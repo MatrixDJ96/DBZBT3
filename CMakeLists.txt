@@ -14,7 +14,7 @@ else ()
 endif ()
 
 # Define Qt path
-set(QT_PATH_FILE CMakeQtPath${CMAKE_CXX_COMPILER_ID}.txt)
+set(QT_PATH_FILE CMakeQtPath${CMAKE_SYSTEM_NAME}${CMAKE_CXX_COMPILER_ID}.txt)
 if ("${CMAKE_PREFIX_PATH}" STREQUAL "")
     message(STATUS "Checking Qt path")
     if (EXISTS ${PROJECT_SOURCE_DIR}/${QT_PATH_FILE})
@@ -74,6 +74,13 @@ set(SHARED_HEADERS_PATH ${SHARED_PATH}/Headers)
 set(SHARED_RESOURCES_PATH ${SHARED_PATH}/Resources)
 set(SHARED_SOURCES_PATH ${SHARED_PATH}/Sources)
 
+# Define MessageBox paths
+set(MESSAGEBOX_PATH Libraries/MessageBox)
+set(MESSAGEBOX_FORMS_PATH ${MESSAGEBOX_PATH}/Forms)
+set(MESSAGEBOX_HEADERS_PATH ${MESSAGEBOX_PATH}/Headers)
+set(MESSAGEBOX_RESOURCES_PATH ${MESSAGEBOX_PATH}/Resources)
+set(MESSAGEBOX_SOURCES_PATH ${MESSAGEBOX_PATH}/Sources)
+
 # Define AFLCore paths
 set(AFLCORE_PATH Libraries/AFLCore)
 set(AFLCORE_FORMS_PATH ${AFLCORE_PATH}/Forms)
@@ -87,6 +94,8 @@ set(AFSCORE_FORMS_PATH ${AFSCORE_PATH}/Forms)
 set(AFSCORE_HEADERS_PATH ${AFSCORE_PATH}/Headers)
 set(AFSCORE_RESOURCES_PATH ${AFSCORE_PATH}/Resources)
 set(AFSCORE_SOURCES_PATH ${AFSCORE_PATH}/Sources)
+
+# TODO: Define CTECore paths
 
 # Define AFL-Converter paths
 set(AFL_CONVERTER_PATH AFL-Converter)
@@ -102,15 +111,19 @@ set(AFS_MANAGER_HEADERS_PATH ${AFS_MANAGER_PATH}/Headers)
 set(AFS_MANAGER_RESOURCES_PATH ${AFS_MANAGER_PATH}/Resources)
 set(AFS_MANAGER_SOURCES_PATH ${AFS_MANAGER_PATH}/Sources)
 
-#set(CTE_PLUGIN_PATH CTE-Plugin)
+# TODO: Define CTE-Plugin paths
 
 # Define various paths
-include_directories(${SHARED_RESOURCES_PATH})
+include_directories(${SHARED_RESOURCES_PATH} ${MESSAGEBOX_RESOURCES_PATH})
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${AFS_MANAGER_FORMS_PATH})
 
 # Define Shared files
-set(SHARED_RESOURCES ${SHARED_RESOURCES_PATH}/Shared.rc ${SHARED_RESOURCES_PATH}/MessageBox.qrc)
-set(SHARED_SOURCES ${SHARED_SOURCES_PATH}/Shared.cpp ${SHARED_SOURCES_PATH}/MessageBox.cpp)
+set(SHARED_RESOURCES ${SHARED_RESOURCES_PATH}/Shared.rc)
+set(SHARED_SOURCES ${SHARED_SOURCES_PATH}/Shared.cpp)
+
+# Define MessageBox files
+set(MESSAGEBOX_RESOURCES ${MESSAGEBOX_RESOURCES_PATH}/MessageBox.rc ${MESSAGEBOX_RESOURCES_PATH}/MessageBox.qrc)
+set(MESSAGEBOX_SOURCES ${MESSAGEBOX_SOURCES_PATH}/MessageBox.cpp)
 
 # Define AFLCore files
 set(AFLCORE_RESOURCES ${AFLCORE_RESOURCES_PATH}/AFLCore.rc)
@@ -130,21 +143,18 @@ set(AFS_MANAGER_FORMS ${AFS_MANAGER_FORMS_PATH}/MainWindow.ui ${AFS_MANAGER_FORM
 set(AFS_MANAGER_RESOURCES ${AFS_MANAGER_RESOURCES_PATH}/AFS-Manager.rc ${AFS_MANAGER_RESOURCES_PATH}/MainWindow.qrc)
 set(AFS_MANAGER_SOURCES ${AFS_MANAGER_SOURCES_PATH}/Main.cpp ${AFS_MANAGER_SOURCES_PATH}/MainWindow.cpp ${AFS_MANAGER_SOURCES_PATH}/AboutDialog.cpp ${AFS_MANAGER_SOURCES_PATH}/ProgressDialog.cpp ${AFS_MANAGER_SOURCES_PATH}/ReservedSpaceDialog.cpp ${AFS_MANAGER_SOURCES_PATH}/TableWidgetItem.cpp ${AFS_MANAGER_SOURCES_PATH}/Worker.cpp)
 
-#[[Define CTE source code
-set(CTE_PLUGIN_SOURCES ${CTE_PLUGIN_PATH}/Main.cpp)
-set(CTE_PLUGIN_RESOURCES ${CTE_PLUGIN_PATH}/CTE-Plugin.rc)
-set(CTE_CORE_SOURCES ${CTE_CORE_PATH}/CTECore.cpp)
-set(CTE_CORE_RESOURCES ${CTE_CORE_PATH}/CTECore.rc)
-]]
+# TODO: Define CTE-Plugin files
 
 # Shared
 add_library(Shared SHARED ${SHARED_SOURCES} ${SHARED_RESOURCES})
 target_include_directories(Shared PUBLIC ${SHARED_HEADERS_PATH})
-set(SHARED_LIBRARIES Qt5::Widgets)
 if (MINGW)
-    set(SHARED_LIBRARIES ${SHARED_LIBRARIES} psapi)
+    target_link_libraries(Shared psapi)
 endif ()
-target_link_libraries(Shared ${SHARED_LIBRARIES})
+
+add_library(MessageBox SHARED ${MESSAGEBOX_SOURCES} ${MESSAGEBOX_RESOURCES})
+target_include_directories(MessageBox PUBLIC ${MESSAGEBOX_HEADERS_PATH})
+target_link_libraries(MessageBox Qt5::Widgets)
 
 # AFLCore
 add_library(AFLCore SHARED ${AFLCORE_SOURCES} ${AFLCORE_RESOURCES})
@@ -156,22 +166,16 @@ add_library(AFSCore SHARED ${AFSCORE_SOURCES} ${AFSCORE_RESOURCES})
 target_include_directories(AFSCore PUBLIC ${AFSCORE_HEADERS_PATH})
 target_link_libraries(AFSCore AFLCore)
 
+# TODO: CTECore
+
 # AFL-Converter
 add_executable(AFL-Converter ${AFL_CONVERTER_SOURCES} ${AFL_CONVERTER_RESOURCES})
 target_include_directories(AFL-Converter PUBLIC ${AFL_CONVERTER_HEADERS_PATH})
-target_link_libraries(AFL-Converter AFLCore)
+target_link_libraries(AFL-Converter MessageBox AFLCore)
 
 # AFS-Manager
 add_executable(AFS-Manager ${AFS_MANAGER_Q_OBJECTS} ${AFS_MANAGER_FORMS} ${AFS_MANAGER_SOURCES} ${AFS_MANAGER_RESOURCES})
 target_include_directories(AFS-Manager PUBLIC ${AFS_MANAGER_HEADERS_PATH})
-target_link_libraries(AFS-Manager AFSCore)
+target_link_libraries(AFS-Manager MessageBox AFSCore)
 
-#[[
-# CTECore
-add_library(CTECore SHARED ${CTE_CORE_SOURCES} ${CTE_CORE_RESOURCES})
-target_link_libraries(CTECore Shared)
-
-# CTE-Plugin
-add_executable(CTE-Plugin ${CTE_PLUGIN_SOURCES} ${CTE_PLUGIN_RESOURCES})
-target_link_libraries(CTE-Plugin CTECore Dialog)
-]]
+# TODO: CTE-Plugin

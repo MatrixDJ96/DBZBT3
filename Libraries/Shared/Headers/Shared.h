@@ -43,6 +43,9 @@ namespace Shared
 	/* Function to tranform uppercase chars into lowercase chars */
 	std::string getLowercase(const std::string &str);
 
+	/* Function to get full path from another path */
+	std::string getFullPath(const std::string &path);
+
 	/* Function to get filename without dirname from path */
 	std::string getFileBasename(const std::string &path);
 
@@ -68,6 +71,7 @@ namespace Shared
 
 	/* Function to get size (in KB, MB or GB)  */
 	std::string getSize(double size);
+
 	double getSize(const std::string &size);
 
 	/* Function to truncate file size */

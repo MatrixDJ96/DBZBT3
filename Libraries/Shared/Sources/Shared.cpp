@@ -3,7 +3,19 @@
 
 #include <Shared.h>
 
-static constexpr uint64_t max_size = 1048576 * 128; // 128 mb
+#ifdef _WIN32
+
+#include <windows.h>
+#include <direct.h>
+#include <psapi.h>
+
+#elif __linux
+
+#include <unistd.h>
+
+#endif
+
+static constexpr uint64_t max_size = 1048576 * 64; // 1 * x MB
 
 uint64_t Shared::getFileSize(const std::string &path)
 {
@@ -30,6 +42,43 @@ std::string Shared::getLowercase(const std::string &str)
 	}
 
 	return lowername;
+}
+
+std::string Shared::getFullPath(const std::string &path)
+{
+	char str[512];
+	getcwd(str, 512);
+
+	std::string file_basename = Shared::getFileBasename(path);
+	std::string curr_path = Shared::backSlashtoSlash(str) + '/';
+	std::string new_path = Shared::backSlashtoSlash(Shared::getDirname(path));
+
+	auto found = new_path.find("/./");
+	while (found != std::string::npos) {
+		new_path.erase(found, 2);
+		found = new_path.find("/./");
+	}
+
+	if (new_path.substr(0, 2) == "./") {
+		new_path.erase(0, 2);
+	}
+
+#ifdef _WIN32
+	if (new_path[1] != ':') {
+#else
+	if (new_path[0] != '/') {
+#endif
+		new_path = curr_path + new_path;
+
+		found = new_path.find("/../");
+		while (found != std::string::npos) {
+			auto new_found = new_path.substr(0, found).rfind('/');
+			new_path = new_path.substr(0, new_found) + new_path.substr(found + 3);
+			found = new_path.find("/../");
+		}
+	}
+
+	return new_path + file_basename;
 }
 
 std::string Shared::getFileBasename(const std::string &path)
@@ -66,9 +115,6 @@ std::string Shared::getDirname(const std::string &path)
 	std::size_t found = path.find_last_of("/\\");
 	if (found != std::string::npos) {
 		dirname = path.substr(0, found + 1);
-	}
-	else {
-		dirname = path;
 	}
 
 	return dirname;
@@ -243,13 +289,10 @@ double Shared::getSize(const std::string &ssize)
 	return size;
 }
 
-#ifdef _WIN32
-
-#include <windows.h>
-#include <psapi.h>
-
 bool Shared::truncateFile(const std::string &path, long size)
 {
+#ifdef _WIN32
+
 	auto outFile = CreateFile(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if (outFile != INVALID_HANDLE_VALUE) {
@@ -261,50 +304,47 @@ bool Shared::truncateFile(const std::string &path, long size)
 		}
 	}
 
+#elif __linux
+
+	return truncate(path.c_str(), size) == 0;
+
+#endif
+
 	return false;
 }
 
 size_t Shared::getUsedRam()
 {
+	size_t total = 0;
+
+#ifdef _WIN32
+
 	PROCESS_MEMORY_COUNTERS_EX pmc;
 	GetProcessMemoryInfo(GetCurrentProcess(), (PPROCESS_MEMORY_COUNTERS)&pmc, sizeof(pmc));
-	return pmc.PrivateUsage;
-}
+	total = pmc.PrivateUsage;
 
 #elif __linux
 
-#include <unistd.h>
-
-bool Shared::truncateFile(const std::string& path, long size) {
-		return truncate(path.c_str(), size) == 0;
-}
-
-size_t Shared::getUsedRam()
-{
-	std::string usedRam;
-	std::string line("vmrss:");
-	size_t pos = 0; // first char position of line (should be always at 0 but it's best to be sure)
-
 	std::ifstream in("/proc/self/status");
-	while (!in.eof()) {
-		Shared::getLine(in, usedRam);
-		pos = Shared::getLowercase(usedRam).find(line);
-		if (pos != std::string::npos) {
-			if (Shared::getLowercase(usedRam).find("kb") != std::string::npos)
-				return strtoul(usedRam.substr(pos + line.size()).c_str(), nullptr, 10) * 1024; // return size in bytes
 
-			break; // if not kb is unknown and an error
+	if (in.is_open()) {
+		size_t pos = 0;
+		std::string usedRam;
+		std::string line("vmrss:");
+
+		while (!in.eof()) {
+			Shared::getLine(in, usedRam);
+			pos = Shared::getLowercase(usedRam).find(line);
+			if (pos != std::string::npos) {
+				if (Shared::getLowercase(usedRam).find("kb") != std::string::npos) {
+					total = strtoul(usedRam.substr(pos + line.size()).c_str(), nullptr, 10) * 1024; // return size in bytes
+				}
+				break; // if not kb is unknown and an error
+			}
 		}
 	}
 
-	return 0; // error
-}
-
-#else
-
-size_t Shared::getUsedRam()
-{
-	return 0; // unknown
-}
-
 #endif
+
+	return total;
+}

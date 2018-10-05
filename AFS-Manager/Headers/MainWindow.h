@@ -56,7 +56,7 @@ public slots:
 	bool rebuildAFS(AFS_File *afs = nullptr);
 
 private slots:
-	void toAdjust_p1();
+	void toAdjust_p1(bool init);
 
 	void toAdjust_p2(std::string path);
 
@@ -101,7 +101,6 @@ private slots:
 	void on_tableWidget_customContextMenuRequested(QPoint);
 
 signals:
-
 	void done();
 
 	void skipFile();

@@ -6,8 +6,15 @@
 
 using namespace Shared;
 
-Worker::Worker(Type type, AFS_File *afs, const std::map<uint32_t, std::string> &list, QObject *parent) : type(type), afs(afs), errors(0), list(list), iter(this->list.begin()), isValid(true), skipAll(false), content(nullptr), QThread(parent)
+Worker::Worker(Type type, AFS_File *afs, const std::map<uint32_t, std::string> &list, QObject *parent) : afs(afs),/* buffer(nullptr),*/ content(nullptr), errors(0), list(list), iter(this->list.begin()), status(0), skipAll(false), type(type), QThread(parent)
 {
+	/*constexpr int size = 64 * 1024 * 1024;
+	buffer = new char[size];
+
+	for (int i = 0; i < size; ++i) {
+		buffer[i] = nullbyte;
+	}*/
+
 	if (type != Type::Export && type != Type::Import && type != Type::Rebuild) {
 		throw std::out_of_range("Wrong Worker type!");
 	}
@@ -15,13 +22,6 @@ Worker::Worker(Type type, AFS_File *afs, const std::map<uint32_t, std::string> &
 	setTerminationEnabled(true);
 
 	checkReservedSpace();
-
-	/*constexpr int size = 64 * 1024 * 1024;
-	buffer = new char[size];
-
-	for (int i = 0; i < size; ++i) {
-		buffer[i] = nullbyte;
-	}*/
 
 	qDebug() << "Created" << this << "->" << (type == Type::Export ? "export" : (type == Type::Import ? "import" : (type == Type::Rebuild ? "rebuild" : "loading")));
 }
@@ -48,21 +48,40 @@ uint32_t Worker::getPosition() const
 	return iter->first;
 }
 
-bool Worker::checkReservedSpace()
+uint8_t Worker::getStatusRS() const
 {
-	isValid = true;
+	return status;
+}
+
+uint8_t Worker::checkReservedSpace()
+{
+	// RETURN value:
+	// 0 -> ok;
+	// 1 -> no space;
+	// 2 -> too much space
+	// 3 -> no space && too much space.
+
+	status = 0;
 
 	if (type == Type::Import) {
-		for (auto item : list) {
+		for (const auto &item : list) {
 			auto size = getFileSize(item.second);
-			if (size > afs->getReservedSpace(item.first).first) {
-				isValid = false;
-				break;
+
+			auto rs = afs->getReservedSpace(item.first);
+			auto ors = afs->getOptimizedReservedSpace(size, AFS_File::Type::Size);
+
+			if (size > rs.first) {
+				status |= 1;
+			}
+			else if (rs.first > ors) {
+				status |= 2;
 			}
 		}
 	}
 
-	return isValid;
+	qDebug() << "status:" << status;
+
+	return status;
 }
 
 std::map<uint32_t, std::string> Worker::getList() const
@@ -78,23 +97,25 @@ void Worker::setSkipAll(bool flag)
 void Worker::updateAFS(AFS_File *afs)
 {
 	this->afs = afs;
-
 	checkReservedSpace();
+	removeStatusRS(2);
 }
 
 bool Worker::work(uint32_t index, const std::string &path)
 {
-	bool result = false;
+	uint8_t result = 0;
 
 	auto filename = afs->getFilename(index);
 
 	qDebug() << "content is" << (content != nullptr ? "working" : "free");
 
+	qDebug() << "index:" << index << "| path:" << path.c_str();
+
 	try {
 		if (!isInterruptionRequested()) {
 			if (type == Type::Export) {
 				emit progressText(QString::fromLocal8Bit(("Exporting '" + filename + "'...").c_str()));
-				result = afs->exportFile(index, path, content);
+				result = (uint8_t)afs->exportFile(index, path, content);
 			}
 			else if (type == Type::Import) {
 				emit progressText(QString::fromLocal8Bit(("Importing '" + getFileBasename(path) + "' over '" + filename + "'...").c_str()));
@@ -102,7 +123,7 @@ bool Worker::work(uint32_t index, const std::string &path)
 			}
 			else if (type == Type::Rebuild) {
 				emit progressText(QString::fromLocal8Bit(("Rebuilding '" + getFileBasename(afs->afsName) + "' to '" + getFileBasename(path) + "'...").c_str()));
-				result = afs->rebuild(path, content);
+				result = (uint8_t)afs->rebuild(path, content);
 			}
 
 			if (result == 1 || skipAll) {
@@ -112,14 +133,22 @@ bool Worker::work(uint32_t index, const std::string &path)
 				}
 			}
 			else {
-				emit errorFile();
+				if (type == Type::Import && result == 2) {
+					emit toAdjust(false);
+					result = 0;
+				}
+				else {
+					emit errorFile();
+				}
 			}
 		}
-	} catch (std::out_of_range) {
+	} catch (std::out_of_range &) {
 		emit errorMessage(std::string("Unable to ") + (type == Type::Import ? "import" : "export") + " '" + path + "'\n(out_of_range exception)");
 	}
 
-	return result || skipAll;
+	qDebug() << "result:" << result << "| skipAll:" << skipAll;
+
+	return (bool)result || skipAll;
 }
 
 void Worker::run()
@@ -129,10 +158,12 @@ void Worker::run()
 	}
 
 	if (afs != nullptr) {
-		if (!isValid && iter != list.end() && !skipAll) {
-			emit toAdjust();
+		if (status & 2) {
+			emit toAdjust(true);
 		}
 		else {
+			qDebug() << "afs address:" << afs;
+
 			for (; iter != list.end(); ++iter) {
 				if (!work(iter->first, iter->second)) {
 					requestInterruption();
@@ -160,6 +191,11 @@ void Worker::skipFile()
 		}
 		start();
 	}
+}
+
+void Worker::removeStatusRS(uint8_t flag)
+{
+	status &= ~flag;
 }
 
 void Worker::terminate()
