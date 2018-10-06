@@ -922,6 +922,17 @@ void MainWindow::on_tableWidget_cellChanged(int row, int column)
 	}
 }
 
+void MainWindow::on_tableWidget_cellDoubleClicked(int row, int column)
+{
+	if (enableCellChanged) {
+		auto item = ui->tableWidget->item(row, column);
+
+		if (column == columnID::reservedSpace || column == columnID::afterRebuild) {
+			ui->actionModifyReservedSpace->trigger();
+		}
+	}
+}
+
 void MainWindow::on_tableWidget_customContextMenuRequested(QPoint pos)
 {
 	QMenu contextMenu;

@@ -98,6 +98,8 @@ private slots:
 
 	void on_tableWidget_cellChanged(int, int);
 
+	void on_tableWidget_cellDoubleClicked(int, int);
+
 	void on_tableWidget_customContextMenuRequested(QPoint);
 
 signals:
