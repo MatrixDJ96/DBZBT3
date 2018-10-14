@@ -583,10 +583,9 @@ void MainWindow::toAdjust_p1(bool init)
 
 	worker->wait();
 
-	auto result = worker->getStatusRS();
 
 	// check if there is a problem
-	if (result != 0) {
+	if (worker->rsStatus != Worker::ReservedSpace::Status::Ok) {
 		auto index = worker->getPosition();
 		auto buttons = QMessageBox::Yes | QMessageBox::No;
 
@@ -617,7 +616,7 @@ void MainWindow::toAdjust_p1(bool init)
 
 				qDebug() << "Size:" << size << "| Reserved space:" << rs.first << "| Reserved space (after rebuild):" << rs.second;
 
-				if (size > rs.second || (result & 2 && rs.first > ors)) {
+				if (size > rs.second || (worker->rsStatus.has(Worker::ReservedSpace::Status::TooMuchSpace) && rs.first > ors)) {
 					afs->changeReservedSpace(iter->first, ors);
 				}
 			}
@@ -630,8 +629,8 @@ void MainWindow::toAdjust_p1(bool init)
 			}
 		}
 		else {
-			if (result & 2) {
-				worker->removeStatusRS(2);
+			if (worker->rsStatus.has(Worker::ReservedSpace::Status::TooMuchSpace)) {
+				worker->rsStatus.remove(Worker::ReservedSpace::Status::TooMuchSpace);
 				worker->start();
 			}
 			else {

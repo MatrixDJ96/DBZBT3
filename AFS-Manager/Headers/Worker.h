@@ -9,6 +9,34 @@ class Worker : public QThread
 {
 Q_OBJECT
 public:
+	class ReservedSpace
+	{
+	public:
+		enum class Status : uint8_t
+		{
+			Ok = 0x0001, NoSpace = 0x0001, TooMuchSpace = 0x0010, Both = 0x0011
+		};
+	public:
+		ReservedSpace(Status status);
+
+		~ReservedSpace();
+
+		bool has(Status status);
+
+		ReservedSpace &add(Status flag);
+
+		ReservedSpace &remove(Status flag);
+
+		bool operator==(const ReservedSpace &rs);
+
+		bool operator!=(const ReservedSpace &rs);
+
+		ReservedSpace& operator=(Status status);
+
+	private:
+		Status status;
+	};
+
 	Worker(Shared::Type type, AFS_File *afs, const std::map<uint32_t, std::string> &list, QObject *parent = nullptr);
 
 	~Worker() override;
@@ -17,15 +45,11 @@ public:
 
 	uint32_t getPosition() const;
 
-	uint8_t getStatusRS() const;
-
-	uint8_t checkReservedSpace();
+	void checkReservedSpace();
 
 	std::map<uint32_t, std::string> getList() const;
 
 	void setSkipAll(bool flag);
-
-	void removeStatusRS(uint8_t flag);
 
 	void updateAFS(AFS_File *afs);
 
@@ -37,6 +61,7 @@ private:
 
 public:
 	const Shared::Type type;
+	ReservedSpace rsStatus;
 
 private:
 	AFS_File *afs;
@@ -46,9 +71,9 @@ private:
 	std::map<uint32_t, std::string> list;
 	std::map<uint32_t, std::string>::iterator iter;
 	bool skipAll;
-	uint8_t status;
 
 public slots:
+
 	void skipFile();
 
 	void terminate();

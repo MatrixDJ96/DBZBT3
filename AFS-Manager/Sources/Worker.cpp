@@ -6,7 +6,46 @@
 
 using namespace Shared;
 
-Worker::Worker(Type type, AFS_File *afs, const std::map<uint32_t, std::string> &list, QObject *parent) : afs(afs),/* buffer(nullptr),*/ content(nullptr), errors(0), list(list), iter(this->list.begin()), status(0), skipAll(false), type(type), QThread(parent)
+Worker::ReservedSpace::ReservedSpace(Worker::ReservedSpace::Status status) : status(status)
+{
+}
+
+Worker::ReservedSpace::~ReservedSpace() = default;
+
+bool Worker::ReservedSpace::has(Worker::ReservedSpace::Status status)
+{
+	return ((uint8_t)this->status == (uint8_t)((uint8_t)this->status | (uint8_t)status));
+}
+
+Worker::ReservedSpace &Worker::ReservedSpace::add(Worker::ReservedSpace::Status flag)
+{
+	this->status = (Status)((uint8_t)this->status | (uint8_t)flag);
+	return *this;
+}
+
+Worker::ReservedSpace &Worker::ReservedSpace::remove(Worker::ReservedSpace::Status flag)
+{
+	this->status = (Status)((uint8_t)this->status & ~(uint8_t)flag);
+	return *this;
+}
+
+bool Worker::ReservedSpace::operator==(const Worker::ReservedSpace &rs)
+{
+	return this->status == rs.status;
+}
+
+bool Worker::ReservedSpace::operator!=(const Worker::ReservedSpace &rs)
+{
+	return !(*this == rs);
+}
+
+Worker::ReservedSpace &Worker::ReservedSpace::operator=(Worker::ReservedSpace::Status status)
+{
+	this->status = status;
+	return *this;
+}
+
+Worker::Worker(Type type, AFS_File *afs, const std::map<uint32_t, std::string> &list, QObject *parent) : afs(afs),/* buffer(nullptr),*/ content(nullptr), errors(0), list(list), iter(this->list.begin()), rsStatus(ReservedSpace::Status::Ok), skipAll(false), type(type), QThread(parent)
 {
 	/*constexpr int size = 64 * 1024 * 1024;
 	buffer = new char[size];
@@ -48,20 +87,9 @@ uint32_t Worker::getPosition() const
 	return iter->first;
 }
 
-uint8_t Worker::getStatusRS() const
+void Worker::checkReservedSpace()
 {
-	return status;
-}
-
-uint8_t Worker::checkReservedSpace()
-{
-	// RETURN value:
-	// 0 -> ok;
-	// 1 -> no space;
-	// 2 -> too much space
-	// 3 -> no space && too much space.
-
-	status = 0;
+	rsStatus = ReservedSpace::Status::Ok;
 
 	if (type == Type::Import) {
 		for (const auto &item : list) {
@@ -71,17 +99,13 @@ uint8_t Worker::checkReservedSpace()
 			auto ors = afs->getOptimizedReservedSpace(size, AFS_File::Type::Size);
 
 			if (size > rs.first) {
-				status |= 1;
+				rsStatus.add(ReservedSpace::Status::NoSpace);
 			}
 			else if (rs.first > ors) {
-				status |= 2;
+				rsStatus.add(ReservedSpace::Status::TooMuchSpace);
 			}
 		}
 	}
-
-	qDebug() << "status:" << status;
-
-	return status;
 }
 
 std::map<uint32_t, std::string> Worker::getList() const
@@ -98,7 +122,6 @@ void Worker::updateAFS(AFS_File *afs)
 {
 	this->afs = afs;
 	checkReservedSpace();
-	removeStatusRS(2);
 }
 
 bool Worker::work(uint32_t index, const std::string &path)
@@ -158,7 +181,7 @@ void Worker::run()
 	}
 
 	if (afs != nullptr) {
-		if (status & 2) {
+		if (rsStatus.has(ReservedSpace::Status::TooMuchSpace)) {
 			emit toAdjust(true);
 		}
 		else {
@@ -191,11 +214,6 @@ void Worker::skipFile()
 		}
 		start();
 	}
-}
-
-void Worker::removeStatusRS(uint8_t flag)
-{
-	status &= ~flag;
 }
 
 void Worker::terminate()
