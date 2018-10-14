@@ -1,6 +1,7 @@
 #include <MainWindow.h>
 #include <ui_MainWindow.h>
 
+#include <QDateTimeEdit>
 #include <QFileDialog>
 #include <QMimeData>
 #include <QDebug>
@@ -248,6 +249,11 @@ void MainWindow::dropEvent(QDropEvent *event)
 	event->acceptProposedAction();
 }
 
+void MainWindow::populateRowCell(int row, int column, QWidget *widget)
+{
+	ui->tableWidget->setCellWidget(row, column, widget);
+}
+
 void MainWindow::populateRowCell(int row, int column, QTableWidgetItem *item)
 {
 	item->setFlags(item->flags() ^ Qt::ItemIsEditable);
@@ -303,9 +309,9 @@ void MainWindow::drawFileList()
 
 	// set default row height and alignment
 	ui->tableWidget->insertRow(0);
-	ui->tableWidget->verticalHeader()->setDefaultSectionSize(ui->tableWidget->rowHeight(0));
+	//ui->tableWidget->resizeRowToContents(0);
 	ui->tableWidget->verticalHeader()->setDefaultAlignment(Qt::AlignHCenter);
-	ui->tableWidget->resizeRowToContents(0);
+	ui->tableWidget->verticalHeader()->setDefaultSectionSize(ui->tableWidget->rowHeight(0));
 	ui->tableWidget->resizeColumnsToContents();
 
 	// generate rows
@@ -346,8 +352,11 @@ void MainWindow::drawFileList()
 		}
 
 		// date
-		item = new TableWidgetItem(QString::number(vfd[i].day).rightJustified(2, '0') + "-" + QString::number(vfd[i].month).rightJustified(2, '0') + "-" + QString::number(vfd[i].year).rightJustified(4, '0') + " " + QString::number(vfd[i].hour).rightJustified(2, '0') + ":" + QString::number(vfd[i].min).rightJustified(2, '0') + ":" + QString::number(vfd[i].sec).rightJustified(2, '0'));
-		populateRowCell(i, columnID::dateModified, item);
+		//item = new TableWidgetItem(QString::number(vfd[i].day).rightJustified(2, '0') + "-" + QString::number(vfd[i].month).rightJustified(2, '0') + "-" + QString::number(vfd[i].year).rightJustified(4, '0') + " " + QString::number(vfd[i].hour).rightJustified(2, '0') + ":" + QString::number(vfd[i].min).rightJustified(2, '0') + ":" + QString::number(vfd[i].sec).rightJustified(2, '0'));
+		QDate date(vfd[i].year, vfd[i].month, vfd[i].day);
+		QTime time(vfd[i].hour, vfd[i].min, vfd[i].sec);
+		auto widget = new QDateTimeEdit(QDateTime(date, time));
+		populateRowCell(i, columnID::dateModified, widget);
 
 		// fileAddress
 		item = new TableWidgetItem(QString::number(vfi[i].address), TableWidgetItem::Type::Integer);

@@ -29,6 +29,8 @@ private:
 
 	void dropEvent(QDropEvent *event) override;
 
+	void populateRowCell(int row, int column, QWidget *widget);
+
 	void populateRowCell(int row, int column, QTableWidgetItem *item);
 
 	void adjustColumns();
