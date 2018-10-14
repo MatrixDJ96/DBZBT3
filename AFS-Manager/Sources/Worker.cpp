@@ -6,7 +6,7 @@
 
 using namespace Shared;
 
-Worker::ReservedSpace::ReservedSpace(Worker::ReservedSpace::Status status) : status(status)
+Worker::ReservedSpace::ReservedSpace(Worker::ReservedSpace::Status status) : status((uint8_t)status)
 {
 }
 
@@ -14,34 +14,40 @@ Worker::ReservedSpace::~ReservedSpace() = default;
 
 bool Worker::ReservedSpace::has(Worker::ReservedSpace::Status status)
 {
-	return ((uint8_t)this->status == (uint8_t)((uint8_t)this->status | (uint8_t)status));
+	//qDebug() << this->status << "has" << (uint8_t)status << "=" << ((this->status == (this->status | (uint8_t)status)) ? "true" : "false");
+	return (this->status == (this->status | (uint8_t)status));
 }
 
 Worker::ReservedSpace &Worker::ReservedSpace::add(Worker::ReservedSpace::Status flag)
 {
-	this->status = (Status)((uint8_t)this->status | (uint8_t)flag);
+	//qDebug() << this->status << "add" << (uint8_t)flag << "=" << (this->status | (uint8_t)flag);
+	this->status |= (uint8_t)flag;
 	return *this;
 }
 
 Worker::ReservedSpace &Worker::ReservedSpace::remove(Worker::ReservedSpace::Status flag)
 {
-	this->status = (Status)((uint8_t)this->status & ~(uint8_t)flag);
+	//qDebug() << this->status << "remove" << (uint8_t)flag << "=" << (this->status & ~(uint8_t)flag);
+	this->status &= ~(uint8_t)flag;
 	return *this;
 }
 
 bool Worker::ReservedSpace::operator==(const Worker::ReservedSpace &rs)
 {
+	//qDebug() << this->status << "==" << rs.status << (this->status == rs.status ? "true" : "false");
 	return this->status == rs.status;
 }
 
 bool Worker::ReservedSpace::operator!=(const Worker::ReservedSpace &rs)
 {
-	return !(*this == rs);
+	//qDebug() << this->status << "!=" << rs.status << (this->status != rs.status ? "true" : "false");
+	return this->status != rs.status;
 }
 
 Worker::ReservedSpace &Worker::ReservedSpace::operator=(Worker::ReservedSpace::Status status)
 {
-	this->status = status;
+	//qDebug() << this->status << "=" << (uint8_t)status;
+	this->status = (uint8_t)status;
 	return *this;
 }
 

@@ -583,7 +583,6 @@ void MainWindow::toAdjust_p1(bool init)
 
 	worker->wait();
 
-
 	// check if there is a problem
 	if (worker->rsStatus != Worker::ReservedSpace::Status::Ok) {
 		auto index = worker->getPosition();

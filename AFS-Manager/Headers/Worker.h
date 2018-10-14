@@ -14,7 +14,7 @@ public:
 	public:
 		enum class Status : uint8_t
 		{
-			Ok = 0x0001, NoSpace = 0x0001, TooMuchSpace = 0x0010, Both = 0x0011
+			Ok = 0b0000, NoSpace = 0b0001, TooMuchSpace = 0b0010, Both = 0b0011
 		};
 	public:
 		ReservedSpace(Status status);
@@ -34,7 +34,7 @@ public:
 		ReservedSpace& operator=(Status status);
 
 	private:
-		Status status;
+		uint8_t status;
 	};
 
 	Worker(Shared::Type type, AFS_File *afs, const std::map<uint32_t, std::string> &list, QObject *parent = nullptr);
