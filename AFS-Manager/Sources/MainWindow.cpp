@@ -358,6 +358,8 @@ void MainWindow::drawFileList()
 		auto widget = new QDateTimeEdit(QDateTime(date, time));
 		populateRowCell(i, columnID::dateModified, widget);
 
+		connect(widget, &QDateTimeEdit::dateTimeChanged, this, &MainWindow::dateTimeChanged);
+
 		// fileAddress
 		item = new TableWidgetItem(QString::number(vfi[i].address), TableWidgetItem::Type::Integer);
 		populateRowCell(i, columnID::address, item);
@@ -819,8 +821,30 @@ void MainWindow::refreshRow(uint32_t index)
 		}
 
 		// date
-		item = ui->tableWidget->item(row, columnID::dateModified);
-		item->setText(QString::number(fileDesc.day).rightJustified(2, '0') + "-" + QString::number(fileDesc.month).rightJustified(2, '0') + "-" + QString::number(fileDesc.year).rightJustified(4, '0') + " " + QString::number(fileDesc.hour).rightJustified(2, '0') + ":" + QString::number(fileDesc.min).rightJustified(2, '0') + ":" + QString::number(fileDesc.sec).rightJustified(2, '0'));
+		auto widget = (QDateTimeEdit *)ui->tableWidget->cellWidget(row, columnID::dateModified);
+		QDate date(fileDesc.year, fileDesc.month, fileDesc.day);
+		QTime time(fileDesc.hour, fileDesc.min, fileDesc.sec);
+		widget->setDateTime(QDateTime(date, time));
+	}
+}
+
+void MainWindow::dateTimeChanged(const QDateTime &dateTime)
+{
+	if (enableCellChanged) {
+		auto widget = (QDateTimeEdit *)QObject::sender();
+
+		int row = -1;
+
+		for (int i = 0; i < ui->tableWidget->rowCount(); ++i) {
+			if (ui->tableWidget->cellWidget(i, columnID::dateModified) == widget) {
+				row = i;
+				break;
+			}
+		}
+
+		if (row < afs->getFileCount()) {
+			on_tableWidget_cellChanged(row, columnID::dateModified);
+		}
 	}
 }
 
@@ -909,10 +933,10 @@ void MainWindow::on_actionModifyReservedSpace_triggered()
 void MainWindow::on_tableWidget_cellChanged(int row, int column)
 {
 	if (enableCellChanged) {
-		auto item = ui->tableWidget->item(row, column);
 
-		if (column == columnID::filename) {
-			if (row < afs->getFileCount()) {
+		if (row < afs->getFileCount()) {
+			if (column == columnID::filename) {
+				auto item = ui->tableWidget->item(row, column);
 				auto text = item->text();
 				if (text.size() > FILENAME_SIZE) {
 					text.resize(FILENAME_SIZE);
@@ -921,6 +945,24 @@ void MainWindow::on_tableWidget_cellChanged(int row, int column)
 					enableCellChanged = true;
 				}
 				afs->changeFilename(row, text.toLocal8Bit().toStdString().c_str());
+				if (!afs->commitFileDesc()) {
+					ShowError(this, "Error", "Unable to save AFS");
+				}
+			}
+			else if (column == columnID::dateModified) {
+				auto item = (QDateTimeEdit *)ui->tableWidget->cellWidget(row, column);
+				auto date = item->dateTime().date();
+				auto time = item->dateTime().time();
+
+				tm tm {};
+				tm.tm_year = date.year() - 1900;
+				tm.tm_mon = date.month() - 1;
+				tm.tm_mday = date.day();
+				tm.tm_hour = time.hour();
+				tm.tm_min = time.minute();
+				tm.tm_sec = time.second();
+
+				afs->changeDateTime(getIndexFromRow(row), &tm);
 				if (!afs->commitFileDesc()) {
 					ShowError(this, "Error", "Unable to save AFS");
 				}

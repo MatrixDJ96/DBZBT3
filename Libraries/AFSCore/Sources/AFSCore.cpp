@@ -449,15 +449,8 @@ uint8_t AFS_File::importFile(uint32_t index, const std::string &path, char *&con
 
 		if (index < fileCount) {
 			/* Update fileDesc */
-			auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-			auto lt = localtime(&now);
+			changeDateTime(index);
 
-			fileDesc[index].year = lt->tm_year + 1900;
-			fileDesc[index].month = lt->tm_mon + 1;
-			fileDesc[index].day = lt->tm_mday;
-			fileDesc[index].hour = lt->tm_hour;
-			fileDesc[index].min = lt->tm_min;
-			fileDesc[index].sec = lt->tm_sec;
 			fileDesc[index].size = size;
 
 			commitFileDesc();
@@ -497,6 +490,33 @@ uint8_t AFS_File::importAFLCommon(const std::string &path)
 	}
 
 	return (uint8_t)commitFileDesc();
+}
+
+void AFS_File::changeDateTime(uint32_t index, tm *tm)
+{
+	if (index > fileCount) {
+		throw std::out_of_range(OOF_STRING);
+	}
+
+	if (tm != nullptr) {
+		fileDesc[index].year = tm->tm_year + 1900;
+		fileDesc[index].month = tm->tm_mon + 1;
+		fileDesc[index].day = tm->tm_mday;
+		fileDesc[index].hour = tm->tm_hour;
+		fileDesc[index].min = tm->tm_min;
+		fileDesc[index].sec = tm->tm_sec;
+	}
+	else {
+		auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		auto lt = localtime(&now);
+
+		fileDesc[index].year = lt->tm_year + 1900;
+		fileDesc[index].month = lt->tm_mon + 1;
+		fileDesc[index].day = lt->tm_mday;
+		fileDesc[index].hour = lt->tm_hour;
+		fileDesc[index].min = lt->tm_min;
+		fileDesc[index].sec = lt->tm_sec;
+	}
 }
 
 void AFS_File::changeFilename(uint32_t index, const char *newFilename)

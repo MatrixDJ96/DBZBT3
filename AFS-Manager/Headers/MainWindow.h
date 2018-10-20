@@ -72,6 +72,8 @@ private slots:
 
 	void refreshRow(uint32_t index);
 
+	void dateTimeChanged(const QDateTime &dateTime);
+
 	void on_actionOpen_triggered();
 
 	void on_actionExit_triggered();

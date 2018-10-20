@@ -111,6 +111,8 @@ public:
 
 	uint8_t importAFLCommon(const std::string &path);
 
+	void changeDateTime(uint32_t index, tm *tm = nullptr);
+
 	void changeFilename(uint32_t index, const char *newFilename);
 
 	bool changeReservedSpace(uint32_t index, uint32_t newReservedSpace);
