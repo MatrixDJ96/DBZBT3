@@ -8,5 +8,8 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 .idea
-*debug*
-*release*
+.vs
+cmake-*
+Binaries
+CMakeQtPath*.txt
+CMakeLists.txt.user

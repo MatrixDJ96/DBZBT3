@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>420</height>
+   </rect>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>9</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="topHorizontalLayout">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
+      <item alignment="Qt::AlignLeft">
+       <widget class="QLabel" name="afsName">
+        <property name="text">
+         <string>Welcome to AFS-Manager!</string>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignRight">
+       <widget class="QLabel" name="loadingTime"/>
+      </item>
+     </layout>
+    </item>
+    <item row="6" column="0">
+     <layout class="QHBoxLayout" name="bottomHorizontalLayout">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
+      <item alignment="Qt::AlignLeft">
+       <widget class="QLabel" name="afsSize"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="freeSpace">
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignRight">
+       <widget class="QLabel" name="afsFileCount"/>
+      </item>
+     </layout>
+    </item>
+    <item row="5" column="0">
+     <widget class="QTableWidget" name="tableWidget">
+      <property name="contextMenuPolicy">
+       <enum>Qt::CustomContextMenu</enum>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="showGrid">
+       <bool>true</bool>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+      <attribute name="verticalHeaderVisible">
+       <bool>false</bool>
+      </attribute>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuOptions">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="title">
+     <string>Options</string>
+    </property>
+    <addaction name="actionSettings"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <widget class="QMenu" name="menuAFS">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>AFS</string>
+     </property>
+     <addaction name="actionExportToFolder"/>
+     <addaction name="actionImportFromFolder"/>
+    </widget>
+    <widget class="QMenu" name="menuAFL">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>AFL</string>
+     </property>
+     <addaction name="actionExportAFLCommon"/>
+     <addaction name="actionImportAFLCommon"/>
+    </widget>
+    <addaction name="menuAFS"/>
+    <addaction name="menuAFL"/>
+    <addaction name="actionOptimize"/>
+    <addaction name="actionRebuild"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuOptions"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Open</normaloff>:/Open</iconset>
+   </property>
+   <property name="text">
+    <string>Open</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Exit</normaloff>:/Exit</iconset>
+   </property>
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Settings</normaloff>:/Settings</iconset>
+   </property>
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionExportToFolder">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Exporter</normaloff>:/Exporter</iconset>
+   </property>
+   <property name="text">
+    <string>Export to folder</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="icon">
+    <iconset resource="../../Libraries/MessageBox/Resources/MessageBox.qrc">
+     <normaloff>:/Info</normaloff>:/Info</iconset>
+   </property>
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionExportAFLCommon">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Export</normaloff>:/Export</iconset>
+   </property>
+   <property name="text">
+    <string>Export AFL</string>
+   </property>
+  </action>
+  <action name="actionExportSelection">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Export</normaloff>:/Export</iconset>
+   </property>
+  </action>
+  <action name="actionImportAFLCommon">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Import</normaloff>:/Import</iconset>
+   </property>
+   <property name="text">
+    <string>Import AFL</string>
+   </property>
+  </action>
+  <action name="actionImportFile">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Import</normaloff>:/Import</iconset>
+   </property>
+   <property name="text">
+    <string>Import file</string>
+   </property>
+  </action>
+  <action name="actionImportFromFolder">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Importer</normaloff>:/Importer</iconset>
+   </property>
+   <property name="text">
+    <string>Import from folder</string>
+   </property>
+  </action>
+  <action name="actionModifyReservedSpace">
+   <property name="icon">
+    <iconset resource="../Resources/MainWindow.qrc">
+     <normaloff>:/Settings</normaloff>:/Settings</iconset>
+   </property>
+   <property name="text">
+    <string>Modify reserved space</string>
+   </property>
+  </action>
+  <action name="actionOptimize">
+   <property name="text">
+    <string>Optimize</string>
+   </property>
+  </action>
+  <action name="actionRebuild">
+   <property name="text">
+    <string>Rebuild</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="../Resources/MainWindow.qrc"/>
+  <include location="../../Libraries/MessageBox/Resources/MessageBox.qrc"/>
+ </resources>
+ <connections/>
+</ui>

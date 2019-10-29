@@ -1,0 +1,35 @@
+#include <windows.h>
+
+#ifndef VERSIONINFO_H
+#include "VersionInfo.h"
+#endif // VERSIONINFO_H
+
+#ifndef COMPANYNAME_STR
+#define COMPANYNAME_STR         "MatrixDJ96"
+#endif // COMPANYNAME_STR
+
+#define LEGALCOPYRIGHT_STR      "2017-2018 MatrixDJ96"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     VERSION
+PRODUCTVERSION  VERSION
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041004b0"
+        BEGIN
+            VALUE "CompanyName",        COMPANYNAME_STR
+            VALUE "FileDescription",    FILEDESCRIPTION_STR
+            VALUE "FileVersion",        FILEVERSION_STR
+            //VALUE "InternalName",       "TODO: <Internal name>"
+            VALUE "LegalCopyright",     LEGALCOPYRIGHT_STR
+            //VALUE "OriginalFilename",   "TODO: <Original file name>"
+            VALUE "ProductName",        PRODUCTNAME_STR
+            VALUE "ProductVersion",     PRODUCTVERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x410, 1200
+    END
+END
