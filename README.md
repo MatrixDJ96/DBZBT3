@@ -11,7 +11,7 @@ Each ones could help you to modify <b>Dragon Ball Z: Budokai Tenkaichi 3</b>
 
 #
 
-### [AFS-Manager][1] v0.0.0.7 [WIP]
+### [AFS-Manager][1] v0.0.0.8 [WIP]
 * It is a tool which allows managing AFS files<br/>
 * It tries to be the spiritual successor of <b>AFSExplorer v3.7</b> but in a better way<br/>(Just to be clear, without CRASHES!)
 
@@ -22,9 +22,6 @@ Each ones could help you to modify <b>Dragon Ball Z: Budokai Tenkaichi 3</b>
 * It searches for textures inside a file and if it succeeds it creates the corresponding *.ini* that contains info about the textures which could be loaded from <b>Console Texture Plugin v1.0b</b>
 
 #
-
-### Requirement for Windows
-- [Visual C++ Redistributable for Visual Studio 2015][3]
 
 ### Team:
 * MatrixDJ96 (Main developer)
